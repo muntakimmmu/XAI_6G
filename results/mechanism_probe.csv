@@ -1,0 +1,16 @@
+scenario,defender,mean_leakage,acc_obs,acc_obs_prevaction,chance
+strong,no-mitigation,1.0,1.0,1.0,0.28
+strong,Static,0.89,0.999,0.999,0.28
+strong,Sentinel,0.769,0.999,0.999,0.28
+strong,NS-CSD,0.734,0.999,0.999,0.28
+strong,"max-mitigation (proto, d=.95)",0.685,0.99,0.99,0.28
+polymorph,no-mitigation,1.0,1.0,1.0,0.257
+polymorph,Static,0.936,1.0,1.0,0.257
+polymorph,Sentinel,0.868,1.0,1.0,0.257
+polymorph,NS-CSD,0.835,1.0,1.0,0.257
+polymorph,"max-mitigation (proto, d=.95)",0.773,1.0,1.0,0.257
+mild,no-mitigation,0.998,0.957,0.957,0.28
+mild,Static,0.998,0.957,0.957,0.28
+mild,Sentinel,0.986,0.956,0.958,0.28
+mild,NS-CSD,0.927,0.958,0.957,0.28
+mild,"max-mitigation (proto, d=.95)",0.857,0.947,0.947,0.28

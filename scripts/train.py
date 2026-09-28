@@ -29,6 +29,12 @@ VARIANTS = {
     "nscsd_safe": dict(sev_w=2.0),
     "nscsd_sentinel_reward": dict(reward="reward"),
     "no_shield_discovery": dict(shield_discovery=False),
+    # Delta variants targeting the severe-outage failure under overload
+    "nscsd_budget": dict(sev_budget=0.05),
+    "nscsd_safemember": dict(safe_member=True),
+    "nscsd_budget_safemember": dict(sev_budget=0.05, safe_member=True),
+    "nscsd_cgrpo": dict(sev_budget=0.05, cost_norm="channel"),
+    "nscsd_cgrpo_safemember": dict(sev_budget=0.05, cost_norm="channel", safe_member=True),
 }
 
 

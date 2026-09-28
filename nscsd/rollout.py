@@ -100,10 +100,14 @@ def summarize(out, leak_key="leak_att"):
 def validation_score(defender, seed, n_eps=10, T=100, physics="inline", battery=None, sev_w=0.5):
     """Composite score on the validation battery with fixed CRN tapes (ICMP excluded)."""
     battery = battery or S.VALIDATION
-    scores = {}
+    scores, sev = {}, {}
     for j, (name, vec) in enumerate(battery.items()):
         rng = np.random.default_rng(10_000 + 97 * seed + j)
         out = run_open_loop(defender, np.tile(vec, (n_eps, 1)), rng, T, physics, icmp_allowed=False)
         r = summarize(out)
         scores[name] = benchmark_score(r["quality"], r["leakage"], r["severe"] / 500, r["degraded"] / 500, sev_w)
-    return float(np.mean(list(scores.values()))), scores
+        sev[name] = r["severe"] / 500
+    mean = float(np.mean(list(scores.values())))
+    scores.update({f"sev_{k}": x for k, x in sev.items()})
+    scores["sev_mean"] = float(np.mean(list(sev.values())))
+    return mean, scores

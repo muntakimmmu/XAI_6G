@@ -76,6 +76,15 @@ class Config:
     shield_sigma: float = 0.08
     shield_margin: float = 0.002
     shield_probes: int = 2       # group members that deploy under a perturbed shield
+    # Delta-1: severe-outage budget (Lagrangian, dual ascent) + feasibility-first champion; <0 disables
+    sev_budget: float = -1.0
+    lam_lr: float = 0.5
+    # Delta-2: safe-side member moved along the symbolic monotone-safety direction (lower drop, higher threshold)
+    safe_member: bool = False
+    # how the severe-outage cost enters the advantage: "reward" (Lagrangian penalty inside R, then one
+    # group normalisation) or "channel" (Constrained GRPO, arXiv 2602.05863: standardise objective and
+    # cost separately, then combine A = A_obj - lam * A_cost)
+    cost_norm: str = "reward"
 
 
 class _Stepper:
@@ -107,6 +116,8 @@ def train(cfg: Config, log=print):
     champion, champion_score, champion_iter = copy.deepcopy(policy), -np.inf, 0
     champion_kw, shield_log = dict(DEFAULT), []
     probe_dir = np.zeros(len(BOUNDS))
+    lam, champion_key = 0.0, (-1, -np.inf)
+    straddle_log, sev_log = [], []
     archive = SolutionArchive()
     curriculum = ScenarioCurriculum(rng)
     stepper = _Stepper(cfg)
@@ -154,6 +165,11 @@ def train(cfg: Config, log=print):
             kw_rows = {}
             for j, (k, (lo, hi)) in enumerate(BOUNDS.items()):
                 kw_rows[k] = np.clip(stepper.shield_kw[k] + eps[:, j] * (hi - lo), lo, hi)
+        safe_rows, u_safe = np.zeros(n, bool), None
+        if cfg.safe_member:
+            s_idx = cfg.G - 2 - (cfg.shield_probes if (cfg.shield and cfg.shield_discovery) else 0)
+            safe_rows = member == s_idx
+            u_safe = rng.uniform(0.2, 0.8, n)
         elite_rows = np.zeros(n, bool)
         elites = {}
         if cfg.elite:
@@ -166,7 +182,7 @@ def train(cfg: Config, log=print):
 
         # ---------------- 3. group rollouts ----------------
         O, A_thr, A_focus, A_drop = [], [], [], []
-        R = np.zeros(n)
+        R, Csev = np.zeros(n), np.zeros(n)
         for h in range(cfg.H):
             t = W + h
             el_thr, el_focus, el_drop = np.zeros(n), np.zeros(n, int), np.zeros(n)
@@ -176,17 +192,33 @@ def train(cfg: Config, log=print):
                 el_thr[rows], el_focus[rows], el_drop[rows] = a
             thr, focus, drop = stepper.act(policy, obsG, elite_rows,
                                            (el_thr[elite_rows], el_focus[elite_rows], el_drop[elite_rows]))
+            if u_safe is not None:  # collateral damage never increases as drop falls / threshold rises
+                drop = np.where(safe_rows, drop * u_safe, drop)
+                thr = np.where(safe_rows, thr + (1 - thr) * (1 - u_safe), thr)
             O.append(obsG); A_thr.append(thr); A_focus.append(focus); A_drop.append(drop)
             action, rep = stepper.deploy(obsG, thr, focus, drop, kw_rows)
             obsG, info = E.step(obsG, t, tapeG, (sched[0][:, t], sched[1][:, t], sched[2][:, t]),
                                 action, np.zeros(n, bool), cfg.physics)
             r = info[cfg.reward] if cfg.reward != "score" else info["score"] - (cfg.sev_w - 0.5) * info["severe"]
-            R += r - cfg.shield_penalty * rep
+            R += r - cfg.shield_penalty * rep - (lam if cfg.cost_norm == "reward" else 0.0) * info["severe"]
+            Csev += info["severe"]
         env_steps += n * cfg.H
+        if cfg.sev_budget >= 0:  # dual ascent on the on-policy severe-outage rate
+            on_rows = ~(elite_rows | safe_rows)
+            lam = max(0.0, lam + cfg.lam_lr * (Csev[on_rows].mean() / cfg.H - cfg.sev_budget))
 
         Rg = R.reshape(cfg.B, cfg.G)
         std = Rg.std(1, keepdims=True)
         adv = np.where(std > 1e-6, (Rg - Rg.mean(1, keepdims=True)) / (std + 1e-8), 0.0).reshape(-1)
+        if cfg.cost_norm == "channel" and cfg.sev_budget >= 0:
+            Cg = Csev.reshape(cfg.B, cfg.G)
+            cstd = Cg.std(1, keepdims=True)
+            adv_c = np.where(cstd > 1e-6, (Cg - Cg.mean(1, keepdims=True)) / (cstd + 1e-8), 0.0).reshape(-1)
+            adv = adv - lam * adv_c
+        # fraction of groups whose members differ in severe-outage count (cost visible to the gradient)
+        straddle = float((Csev.reshape(cfg.B, cfg.G).max(1) != Csev.reshape(cfg.B, cfg.G).min(1)).mean())
+        straddle_log.append(straddle)
+        sev_log.append(float(Csev[~(elite_rows | safe_rows)].mean() / cfg.H))
         if eps is not None:  # group-relative evolution-strategy direction for the shield
             probe_dir += (adv[probe_rows, None] * eps[probe_rows]).sum(0)
 
@@ -196,7 +228,7 @@ def train(cfg: Config, log=print):
         foc_t = torch.as_tensor(np.concatenate(A_focus), dtype=torch.long)
         drop_t = torch.as_tensor(np.concatenate(A_drop), dtype=torch.float32).clamp(1e-4, 1 - 1e-4)
         adv_t = torch.as_tensor(np.tile(adv, cfg.H), dtype=torch.float32)
-        is_el = torch.as_tensor(np.tile(elite_rows, cfg.H))
+        is_el = torch.as_tensor(np.tile(elite_rows | safe_rows, cfg.H))
         # elite actions may be deterministic extremes; soften them for the likelihood term
         thr_t = torch.where(is_el, thr_t.clamp(0.01, 0.99), thr_t)
         drop_t = torch.where(is_el, drop_t.clamp(0.01, 0.99), drop_t)
@@ -238,9 +270,14 @@ def train(cfg: Config, log=print):
                 if kw is not None:
                     stepper.shield_kw, det.shield_kw, v, per, shield_acc = kw, dict(kw), v_new, per_new, 1
                     shield_log.append(dict(iter=it, val=v, **kw))
-            improved = v > champion_score
+            if cfg.sev_budget >= 0:  # feasibility first, then composite
+                key = (1, v) if per["sev_mean"] <= cfg.sev_budget else (0, -per["sev_mean"])
+            else:
+                key = (1, v)
+            improved = key > champion_key
             if improved:
                 champion, champion_score, champion_iter, bad = copy.deepcopy(policy), v, it, 0
+                champion_key = key
                 champion_kw = dict(stepper.shield_kw)
             else:
                 bad += 1
@@ -278,7 +315,9 @@ def train(cfg: Config, log=print):
                     curriculum.update(cands, regret[len(pool):], regret[: len(pool)])
 
             rec = dict(iter=it, env_steps=env_steps, val=v, champion=champion_score, champion_iter=champion_iter,
-                       shield_accept=shield_acc, **{f"shield_{k}": x for k, x in stepper.shield_kw.items()},
+                       shield_accept=shield_acc, lam=lam,
+                       straddle=float(np.mean(straddle_log[-cfg.eval_every:])),
+                       train_sev=float(np.mean(sev_log[-cfg.eval_every:])), **{f"shield_{k}": x for k, x in stepper.shield_kw.items()},
                        tree_val=tree_v, rollbacks=rollbacks, archive_inserts=n_ins, regret=regret_mean,
                        archive=str(archive.composition()), minutes=(time.time() - t0) / 60,
                        **{f"val_{k}": x for k, x in per.items()},
@@ -286,7 +325,7 @@ def train(cfg: Config, log=print):
             history.append(rec)
             log(f"[seed {cfg.seed}] it {it:4d} steps {env_steps/1e6:.2f}M val {v:+.3f} "
                 f"champ {champion_score:+.3f}@{champion_iter} tree {tree_v:+.3f} rb {rollbacks} "
-                f"regret {regret_mean:.3f} shield {_fmt(stepper.shield_kw)} arch {archive.composition()}")
+                f"regret {regret_mean:.3f} lam {lam:.2f} sev {per['sev_mean']:.3f} shield {_fmt(stepper.shield_kw)} arch {archive.composition()}")
 
     return dict(policy=policy, champion=champion, champion_score=champion_score, champion_shield=champion_kw,
                 final_shield=dict(stepper.shield_kw), shield_log=shield_log, best_tree=best_tree,
@@ -377,6 +416,8 @@ def discover_shield(det, v_cur, rng, cfg, direction=None):
             kw[k] = float(np.clip(cur[k] + step[j] * (hi - lo), lo, hi))
         cand = NetDefender(det.net, True, shield_kw=kw)
         v, per = validation_score(cand, cfg.seed, physics=cfg.physics, sev_w=cfg.sev_w)
+        if cfg.sev_budget >= 0 and per["sev_mean"] > cfg.sev_budget:
+            continue  # a shield change may never break the operator's outage budget
         if v > best_v and safe_wrt(certify(cand, cfg.seed, cfg.physics), ref):
             best_kw, best_v, best_per = kw, v, per
     return best_kw, best_v, best_per
