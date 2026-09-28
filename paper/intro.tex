@@ -1,0 +1,134 @@
+% ---------------------------------------------------------------------------
+\section{Introduction}
+% ---------------------------------------------------------------------------
+Autonomous, closed-loop DDoS mitigation is a basic capability for zero-touch
+6G service management~\cite{benzaid2020zsm,liyanage2023oran}. It is also a
+setting where purely neural control is hard to trust: exploratory actions can
+cause outages, learned policies are opaque, and policies trained against
+adaptive opponents may not converge~\cite{guo2020xai6g,senevirathna2025xaib5gsec}.
+Sentinel~\cite{alfatemi2026sentinel} is a recent and carefully evaluated
+answer to these problems. It wraps a PPO defender~\cite{schulman2017ppo} in a
+symbolic safety shield~\cite{alshiekh2018shielding}, trains it in a co-evolutionary
+wargame against a PPO attacker with a Hall-of-Fame archive~\cite{rosin1997newmethods},
+and distils the result into depth-4 decision trees. Its evaluation is also
+unusually candid: all ten seeds show \emph{late-stage co-evolutionary
+collapse}, so the reported numbers depend on a benchmark checkpoint selected
+after training. Outside the held-out ICMP scenario, the shielded policy is
+statistically indistinguishable from its unshielded PPO ablation, and strict SLA
+compliance is never reached under attack.
+
+This paper asks whether the \emph{co-evolutionary} part of the design is needed
+at all. We propose \textbf{Neuro-Symbolic Continuous Solution Discovery
+(NS-CSD)}, which keeps Sentinel's POMDP, action space and shield but replaces
+its training paradigm. The equilibrium-seeking attacker--defender game becomes
+an open-ended discovery process that accumulates solutions, both neural and
+symbolic, and never discards the best one found so far. The defender is trained with Group
+Relative Policy Optimization (GRPO)~\cite{shao2024deepseekmath}. GRPO is
+critic-free: advantages come from comparing a group of rollouts that start
+from the same state. In a simulator the group can be \emph{forked} from one
+state and made to replay identical traffic (common random numbers,
+CRN~\cite{ng2000pegasus}), so the group comparison isolates the effect of the
+defender's actions. Scenario difficulty comes from a regret-driven curriculum
+grounded in an archive of known solutions~\cite{jiang2021plr,parkerholder2022accel},
+not from a learned adversary. Two further changes make the method
+neuro-symbolic in both directions: symbolic programs are archive elites that
+teach the neural policy, and the parameters of the symbolic shield are
+themselves discovered under a safety certificate.
+
+We re-implemented Sentinel's released simulator and shield as a vectorised,
+test-checked port and re-evaluated Sentinel's own paper checkpoints with it.
+This reproduced the published results closely and exposed three properties of
+the testbed that bound what any defender can achieve (Section~\ref{sec:diagnostics}).
+First, link overload is computed on the pre-filter load, which caps service
+quality at 0.556 under a full-intensity flood whatever the defender does.
+Second, the fixed shield's PanicGuard clamps mitigation whenever utilisation is
+below 0.6, so low-rate floods pass almost untouched. Third, the shaped reward
+used for training differs from the composite score used for model selection.
+These observations shaped NS-CSD's design and the way we report results.
+
+\textbf{Contributions.}
+\begin{itemize}
+\item \emph{A co-evolution-free training paradigm} for neuro-symbolic
+DDoS defence. It combines CRN-forked, critic-free GRPO; a quality-diversity
+Solution Archive in which neural snapshots, crystallised tree programs and seed
+programs compete per scenario niche with monotone elitism; archive-regret
+scenario discovery; and archive-guided improvement (elite injection, champion
+KL anchor and roll-back). Model selection happens inside training, not after it.
+\item \emph{Certificate-gated shield discovery.} The symbolic layer is
+re-parameterised during training using shield probes inside GRPO groups and a
+group-relative evolution-strategy direction. A change is adopted only if it
+causes no safety regression relative to the operator-approved shield on
+attack-free and flash-crowd traffic.
+\item \emph{A reproducible testbed audit.} We provide a vectorised port of
+Sentinel's simulator and shield that is equivalence-tested against the
+reference code and reproduces the published Table~I from the released
+checkpoints, together with diagnostics that separate simulator ceilings from
+learning failures.
+\item \emph{A three-protocol evaluation} against Sentinel's released 10-seed
+checkpoints and an equal-budget PPO control. Protocol A replays Sentinel's own
+trained attackers, which is a transfer setting for NS-CSD. Protocol B is an
+attacker-agnostic battery with four held-out stress tests. Protocol C is an
+adaptive cross-entropy red team over the full scenario space, ICMP included.
+The evaluation includes ablations of every component, paired statistics with
+Holm correction, and an analysis of crystallised rule programs.
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Related Work}
+% ---------------------------------------------------------------------------
+\textbf{Learning-based DDoS defence.} Deep detectors such as
+LUCID~\cite{doriguzzi2020lucid} classify traffic but do not decide how to
+mitigate it. DRL mitigation has used DDPG flow control in
+SDN~\cite{liu2018drlddos}, multi-agent router throttling~\cite{malialis2015distributed},
+per-host drop control~\cite{simpson2020perhost} and autonomous SDN mitigation
+frameworks~\cite{akbari2020atmos}; see~\cite{nguyen2023drlcyber} for a survey.
+Adversarial RL attackers are also used to stress detectors~\cite{shao2025adados}.
+Sentinel~\cite{alfatemi2026sentinel} adds runtime shielding, rule
+crystallisation and co-evolution; NS-CSD is built directly on its formulation.
+
+\textbf{Critic-free policy optimisation.} GRPO~\cite{shao2024deepseekmath}
+replaces PPO's learned value baseline~\cite{schulman2017ppo,schulman2016gae}
+with a group mean, much like leave-one-out REINFORCE~\cite{kool2019buy4,ahmadian2024back}.
+It underlies large-scale RL with verifiable rewards~\cite{guo2025deepseekr1},
+and its biases and stabilisation have been studied~\cite{yu2025dapo,liu2025understanding,zheng2025gspo}.
+LUFFY mixes off-policy traces into GRPO groups~\cite{yan2025luffy}. Other work
+constrains GRPO with Lagrangian costs~\cite{girgis2026constrainedgrpo} or adds
+diversity to its reward~\cite{li2025darling}. Outside language models, GRPO
+has been studied for classic control and robotics~\cite{oliveira2025critics,khanda2025grpocontinuous,wang2026gr2po}.
+It has also been applied to network security, as an LLM-based security-automation loop in
+zero-touch networks~\cite{cao2025secloop}. We therefore do not claim the first
+use of GRPO in either setting. To our knowledge, NS-CSD is the first use of
+GRPO for a numeric DDoS mitigation controller. It is also the first to fork
+CRN groups from simulator states and to couple GRPO with an archive of mixed
+neural and symbolic solutions and with UED-style scenario generation.
+
+\textbf{Curricula and open-endedness.} Unsupervised environment design
+generates training levels by regret: PAIRED~\cite{dennis2020paired},
+PLR~\cite{jiang2021plr,jiang2021robustplr}, ACCEL~\cite{parkerholder2022accel},
+with a critique of regret proxies in~\cite{rutherford2024noregrets}.
+POET co-evolves environments and solutions~\cite{wang2019poet}, and
+curricula have been paired with GRPO for LLM prompts~\cite{chen2025sec}. Quality
+diversity keeps a map of elites~\cite{mouret2015mapelites,pugh2016qd}, which
+can be improved with policy gradients~\cite{nilsson2021pgame}. Program-discovery
+systems such as FunSearch~\cite{romeraparedes2024funsearch} and
+AlphaEvolve~\cite{novikov2025alphaevolve} keep monotone databases of
+evaluated programs. These systems are the closest analogue of our continuous
+solution discovery, which fits the open-endedness framing
+of~\cite{hughes2024openendedness}.
+
+\textbf{Co-evolution pathologies.} Competitive co-evolution is known to cycle,
+disengage and forget~\cite{ficici1998challenges,watson2001minimal,balduzzi2019openended}.
+Hall-of-Fame archives~\cite{rosin1997newmethods}, fictitious self-play~\cite{heinrich2015fsp}
+and PSRO~\cite{lanctot2017psro} reduce these problems but keep a learned
+opponent; the same holds for robust adversarial RL~\cite{pinto2017rarl}.
+NS-CSD removes the opponent entirely.
+
+\textbf{Safe and interpretable RL.} Shields enforce specifications at
+runtime~\cite{alshiekh2018shielding,konighofer2021online}. Constrained RL moves
+safety into the objective instead~\cite{achiam2017cpo,garcia2015saferl}.
+VIPER~\cite{bastani2018viper} and programmatic RL~\cite{verma2018pirl} extract
+verifiable programs from policies; see~\cite{acharya2023neurosymbolic} for a
+survey of neuro-symbolic RL. XAI is widely argued to be necessary for 6G
+automation~\cite{guo2020xai6g,wang2021xai6g}. NS-CSD differs from prior shielded
+RL in treating the shield as a \emph{discoverable} artefact, while keeping a
+runtime guarantee envelope defined by the operator.

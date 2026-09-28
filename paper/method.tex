@@ -1,0 +1,191 @@
+% ---------------------------------------------------------------------------
+\section{NS-CSD: Neuro-Symbolic Continuous Solution Discovery}
+\label{sec:method}
+% ---------------------------------------------------------------------------
+
+NS-CSD keeps Sentinel's problem formulation, i.e.\ the POMDP over 12 aggregate
+telemetry features, the action $a_t=\langle\tau_t,f_t,d_t\rangle$ and the symbolic
+shield $\mathcal{S}$, and replaces its training machinery. It drops the co-evolving
+PPO attacker, the Hall-of-Fame archive, the learned critic and post-hoc
+checkpoint selection. In their place it runs one continuous loop with five
+interacting parts (Fig.~\ref{fig:arch}, Algorithm~\ref{alg:nscsd}):
+(i) a critic-free GRPO defender trained on forked, common-random-number rollouts;
+(ii) a quality-diversity \emph{Solution Archive} whose elites are heterogeneous
+(neural snapshots, crystallised decision-tree programs and seed symbolic programs);
+(iii) a regret-driven \emph{Scenario Curriculum} that generates attack scenarios
+instead of learning an attacker; (iv) archive-guided policy improvement through
+elite injection, a KL anchor and champion roll-back; and (v) certificate-gated
+\emph{discovery of the symbolic shield itself}.
+
+\subsection{Scenario space}
+\label{sec:scenarios}
+An attack scenario is a parameter vector
+$\xi=(w,\;p_{\text{stay}},\;[i_\ell,i_h],\;[m_\ell,m_h],\;P,\;\delta,\;p_{\text{flash}})\in\Xi\subset\mathbb{R}^{14}$:
+attack-family weights $w$ over \{none, SYN, UDP, HTTP, ICMP, mixed\}, the Markov
+persistence of the active family, intensity and mutation ranges that are
+resampled on every family switch, an optional on/off pulse (period $P$, duty
+$\delta$) and a flash-crowd probability. A scenario compiles into an
+open-loop attack schedule plus an \emph{exogenous tape} holding every random
+quantity the simulator draws: Poisson arrivals, flash-crowd multipliers and
+observation noise. Training scenarios never put weight on ICMP, so ICMP
+stays held out. A coarse descriptor
+$\kappa(\xi)=(\arg\max_k w_k,\;\text{intensity bin})$ splits $\Xi$ into 18 niches.
+
+\subsection{Critic-free GRPO with common random numbers}
+\label{sec:grpo}
+Each iteration draws $B$ contexts $\xi_b$ from the curriculum and warms each one
+up for $W\sim\mathcal{U}\{0,\dots,W_{\max}\}$ steps under the current policy,
+reaching a realistic mid-episode state $s^{(b)}_0$. The context is then
+\emph{forked} into a group of $G$ members that replay the same tape. That is,
+they share common random numbers (CRN)~\cite{ng2000pegasus}. Member $g$ acts
+for $H$ steps through the shield and collects the verifiable return
+\begin{equation}
+R_{b,g}=\sum_{h=0}^{H-1} r(s_h,\mathcal{S}(s_h,a_h)),\quad
+r = \mathrm{SQ}-\mathrm{leak}-w_{\text{sev}}\mathbb{1}[\mathrm{SQ}<0.5]-0.25\,\mathbb{1}[\mathrm{SQ}<0.75],
+\label{eq:reward}
+\end{equation}
+which is the per-step form of Sentinel's own checkpoint-selection score (its
+Eq.~(15), $w_{\text{sev}}=0.5$). An operator can raise $w_{\text{sev}}$ to
+express a safety-first intent. The advantage is group-relative, with no value
+network~\cite{shao2024deepseekmath}:
+\begin{equation}
+A_{b,g}=\frac{R_{b,g}-\operatorname{mean}_{g'}R_{b,g'}}{\operatorname{std}_{g'}R_{b,g'}+\epsilon},
+\label{eq:adv}
+\end{equation}
+and it is assigned to all $H$ actions of member $g$. Because the members differ
+only in their own actions, $A_{b,g}$ is a paired, low-variance comparison. The
+traffic noise that dominates a single rollout's return cancels within the
+group. We test this directly by ablating CRN, which gives every member an
+independent tape.
+The policy (the same two-layer, 64-unit Beta/Categorical network as Sentinel,
+without a critic) maximises the clipped surrogate
+\begin{equation}
+\mathcal{J}(\theta)=\mathbb{E}\Big[\min\big(\rho A,\operatorname{clip}(\rho,1\!\pm\!\epsilon)A\big)\Big]
+-\beta_{\text{KL}}\,\mathbb{E}\big[D_{\mathrm{KL}}(\pi_\theta\,\|\,\pi_{\text{ref}})\big]
++c_{\text{H}}\,\mathbb{E}[\mathcal{H}(\pi_\theta)],
+\label{eq:grpo}
+\end{equation}
+where $\rho=\pi_\theta(a|s)/\pi_{\theta_{\text{old}}}(a|s)$, the KL is computed in
+closed form for the Beta and Categorical heads, and $\pi_{\text{ref}}$ is the
+current archive champion (Section~\ref{sec:anchor}), not the initial policy.
+
+\subsection{Solution Archive}
+\label{sec:archive}
+For each niche $k$ the archive stores the best solution found so far,
+$\mathcal{A}[k]$. A solution is any deployable controller together with the
+shield parameters it runs under: a neural snapshot, a crystallised tree
+program (Section~\ref{sec:crystal}) or a seed program. Seed programs are the
+18 constant rules $(\tau,f,d)$ on a coarse grid, which give the archive
+interpretable baselines from iteration 0. Every $K$ iterations the current
+policy and its crystallised program are \emph{offered} to the archive. For each
+niche, the candidate and the incumbent are scored on the same curriculum
+scenarios with the same CRN seed, and the incumbent is replaced only if the
+candidate is strictly better. Each niche's score on its evaluation set
+therefore never decreases. Neural and symbolic solutions compete on equal
+terms, so the archive shows directly where a small tree is as good as the
+network. It also supplies the teachers for elite injection.
+
+\subsection{Regret-driven scenario curriculum}
+\label{sec:curriculum}
+Sentinel's attacker maximises the defender's loss. That objective has no
+fixed point once attacks exceed what any defender can handle, and its
+training shows the late-stage degradation that Sentinel then has to repair
+with checkpoint selection. NS-CSD instead ranks scenarios by \emph{regret
+against the archive},
+\begin{equation}
+\mathrm{reg}(\xi)=\max\big(0,\;J(\mathcal{A}[\kappa(\xi)],\xi)-J(\pi_\theta,\xi)\big),
+\label{eq:regret}
+\end{equation}
+which measures how far the live policy falls short of a solution the system
+has \emph{already found} for $\xi$. Regret is zero on scenarios that nothing in
+the archive handles better, so the curriculum cannot run away into unwinnable
+attacks. In UED terms it is a critic-free, archive-grounded replacement for
+the value-loss score of prioritised level replay
+(PLR)~\cite{jiang2021plr,jiang2021robustplr}. The curriculum keeps a buffer of
+64 scenarios. Contexts are replayed from it with probability $0.5$, using
+rank-based priority on regret mixed with staleness; the rest are drawn from
+the prior. At each discovery step, 16 candidates are proposed: half are
+ACCEL-style edits of buffered scenarios~\cite{parkerholder2022accel} and half
+are fresh draws. The candidates are scored, and the buffer keeps the
+highest-regret scenarios.
+
+\subsection{Archive-guided improvement: elite injection, anchor, roll-back}
+\label{sec:anchor}
+\emph{Elite injection.} When the archive holds an elite for a context's niche,
+one of the $G$ group members is driven by that elite, following mixed-policy
+GRPO~\cite{yan2025luffy}. It competes inside the group-relative normalisation
+of Eq.~\eqref{eq:adv}. Its actions enter the loss only through an
+advantage-weighted likelihood term $-c_{\text{el}}\,A^{+}\log\pi_\theta(a^{\text{el}}|s)$,
+so the policy imitates the elite \emph{only where the elite beat the policy's
+own samples on identical traffic}.
+\emph{Anchor and roll-back.} A validation battery (benign, mild, strong,
+chaos; ICMP is excluded so that it stays unseen) is run every $K$ iterations.
+Its composite score determines the \emph{champion}, and $\pi_{\text{ref}}$ in
+Eq.~\eqref{eq:grpo} is set to it. If validation stays more than a margin below
+the champion for three consecutive evaluations, the policy and its shield are
+rolled back to the champion. Sentinel selects a checkpoint after training
+ends. NS-CSD instead makes the best-known solution the anchor for further
+optimisation during training.
+
+\subsection{Certificate-gated shield discovery}
+\label{sec:shielddisc}
+A diagnostic in Section~\ref{sec:diagnostics} shows that the \emph{fixed}
+shield, not the neural policy, limits mitigation of low-rate floods. When link
+utilisation is below 0.6, PanicGuard caps the drop rate at 0.1 and raises the
+threshold to at least 0.4, so a flood that keeps utilisation under 0.6 passes
+almost untouched. NS-CSD therefore treats the PanicGuard parameters
+$\phi=(u_{\text{gate}},d_{\text{cap}},\tau_{\text{floor}})$ as part of the
+solution and discovers them continuously, under two safeguards.
+
+\emph{Shield probes.} A policy trained behind a fixed clamp gets no learning
+signal inside the clamped region: every sampled action is repaired to the same
+action and, under CRN, earns the same return. NS-CSD therefore runs two members
+of every group under a perturbed shield $\phi+\varepsilon$. This exposes the
+policy to the relaxed region and yields a group-relative evolution-strategy
+direction $\sum A_{b,g}\varepsilon_{b,g}$ for $\phi$. For the same reason, NS-CSD
+does not use Sentinel's shield-repair penalty, which trains the policy to
+propose only actions the current shield already allows.
+
+\emph{Safety certificate.} At each discovery step, candidate shields are
+proposed along the ES direction (three step sizes) and at random. A candidate
+is adopted only if it (a) improves the validation composite by more than a
+margin and (b) causes \emph{no safety regression relative to the
+operator-approved default shield} on a certification battery of attack-free
+traffic, with and without flash crowds. Regression means lower service quality
+(tolerance $2\times10^{-3}$ and $5\times10^{-3}$) or any additional severe or
+degraded step. The certificate is empirical, based on fixed common random
+numbers; it is not a formal proof. The ICMP rules and the remaining guards are
+never modified.
+
+\subsection{Continuous rule crystallisation}
+\label{sec:crystal}
+At every discovery step the shielded policy is distilled into three depth-4
+trees (focus classifier; threshold and drop regressors) fitted on
+(observation, deployed action) pairs from the validation battery and from
+random prior scenarios, with fidelity measured on a 30\,\% held-out split. The
+tree program runs behind the same shield and is offered to the archive as a
+solution in its own right. For operators we also report the tree after merging
+redundant splits, i.e.\ splits whose sub-trees give the same decision
+(Section~\ref{sec:rules}).
+
+\begin{algorithm}[t]
+\caption{NS-CSD training loop (one seed)}
+\label{alg:nscsd}
+\small
+\begin{algorithmic}[1]
+\STATE init $\pi_\theta$; $\pi_{\text{ref}}\!\leftarrow\!\pi_\theta$; shield $\phi\!\leftarrow\!\phi_0$; archive $\mathcal{A}\!\leftarrow$ seed programs; curriculum buffer $\mathcal{B}\!\sim$ prior
+\FOR{$i=1,\dots,I$}
+  \STATE draw $B$ scenarios from $\mathcal{B}$ (prob.\ 0.5) or the prior; compile schedules + tapes; warm up $W$ steps
+  \STATE fork each context into $G$ CRN members: policy samples, 2 shield probes $\phi+\varepsilon$, 1 elite $\mathcal{A}[\kappa(\xi)]$
+  \STATE roll out $H$ steps through $\mathcal{S}_\phi$; returns $R_{b,g}$ (Eq.~\ref{eq:reward}); advantages (Eq.~\ref{eq:adv})
+  \STATE update $\theta$ with Eq.~\eqref{eq:grpo} + elite likelihood term; accumulate ES direction for $\phi$
+  \IF{$i \bmod K = 0$}
+    \STATE validate $\pi_\theta$; propose shields; adopt best certified improving $\phi$ (Sec.~\ref{sec:shielddisc})
+    \STATE update champion; $\pi_{\text{ref}}\!\leftarrow$ champion; roll back on sustained regression
+    \STATE crystallise $\pi_\theta$ into tree program $T$; offer $\pi_\theta$ and $T$ to $\mathcal{A}$ (monotone per niche)
+    \STATE propose 16 scenarios; score regret (Eq.~\ref{eq:regret}); keep top-regret in $\mathcal{B}$
+  \ENDIF
+\ENDFOR
+\STATE \textbf{return} champion (policy + shield), best tree program, archive
+\end{algorithmic}
+\end{algorithm}

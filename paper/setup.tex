@@ -1,0 +1,97 @@
+% ---------------------------------------------------------------------------
+\section{Testbed, Reproduction and Diagnostics}
+\label{sec:diagnostics}
+% ---------------------------------------------------------------------------
+\textbf{Vectorised port.} We re-implemented Sentinel's released simulator and
+shield~\cite{sentinelcode} in batched NumPy. The link capacity is 1000,
+legitimate arrivals are Poisson(300) and an attack of intensity $i$ adds
+$1500\,i$. Attack families are SYN, UDP, HTTP, ICMP and mixed; each family has
+its own match score per filtering focus, and polymorphic mutation reduces that
+score. Observations are aggregate telemetry computed from served traffic. Two
+unit tests replay the reference \texttt{DDoSEnv.step} and
+\texttt{SymbolicShield.repair} against the port on identical random draws; they
+agree within $10^{-5}$ over 400 random steps, including ICMP re-rolls, and over
+5{,}000 random shield queries. Evaluating Sentinel's released
+benchmark checkpoints (seeds 42--51) with Sentinel's own trained attackers
+reproduces its published multi-scenario table. Examples: strong attack
+quality/leakage/severe 0.519/0.815/78.2 (published 0.519/0.815/75.0); zero-shot
+ICMP 0.529/0.747/0 (published 0.529/0.747/0); chaos 0.701/0.836/22.0
+(published 0.699/0.836/25.3). All values are in \texttt{results/DIAGNOSTICS.md}.
+
+\textbf{Diagnostic 1: a physics ceiling.} Overload is computed on the
+\emph{pre-filter} load, so a full-intensity flood yields
+$\mathrm{SQ}\le 1000/1800=0.556$ whatever the defender does. Every defender
+therefore has 500/500 degraded steps under strong attack, and strict SLA
+compliance cannot be reached by construction. This is consistent with
+Sentinel's reported limitation and is not evidence against its method.
+
+\textbf{Diagnostic 2: the fixed shield caps low-rate mitigation.} We computed
+a privileged per-step oracle that knows the attack family, intensity and
+mutation and searches a $21\times3\times20$ action grid at every step. Under
+Protocol B's mild scenario it reaches a composite of 0.163 without the shield,
+but only 0.057 behind the default shield. Sentinel reaches 0.004: its
+PanicGuard drop clamp fires on 333 of 500 steps and leakage is 0.99. The
+binding constraint in this regime is therefore the \emph{symbolic} layer, which
+motivates the shield discovery of Section~\ref{sec:shielddisc}. Under strong
+attack the shielded oracle reaches $-0.45$ with no severe outages, while
+Sentinel reaches $-0.72$; the remaining gap here is a learning gap.
+
+\textbf{Diagnostic 3: objective and selection mismatches.} The released code
+trains the defender on
+$\mathrm{SQ}-\mathrm{CD}-\mathrm{leak}-2\,\mathbb{1}[\text{SLA violated}]-0.1\,\mathbb{1}[\text{repaired}]$,
+but selects checkpoints with the composite score of Sentinel's Eq.~(15). The
+$-2$ SLA term cannot be avoided under overload, and at low rates it rewards
+letting the attack through. In addition, the checkpoint-selection routine
+includes the zero-shot ICMP scenario in its validation average, so ICMP is
+held out from training but not from model selection. NS-CSD trains directly on
+the per-step composite (Eq.~\ref{eq:reward}) and validates without ICMP.
+We apply the same reward and selection rule to our PPO control, so any
+difference between the two is not caused by the objective.
+
+% ---------------------------------------------------------------------------
+\section{Experimental Setup}
+\label{sec:setup}
+% ---------------------------------------------------------------------------
+\textbf{Methods.} \emph{Sentinel} and \emph{Sentinel-final} are Sentinel's
+released benchmark-selected and final (generation 1999) checkpoints for seeds
+42--51. \emph{PPO NoShield} is the same benchmark network run without the
+shield, as in Sentinel's ablation. The remaining baselines are the
+\emph{ShieldOnly} (a random policy behind the shield), \emph{Static},
+\emph{Adaptive} and \emph{Random} controllers from Sentinel. \emph{PPO+shield}
+is our equal-budget control. It uses the same network with a value head,
+GAE, 32 parallel 100-step episodes per update and 420 updates. Its scenario
+prior, reward, validation battery and champion selection are those of NS-CSD,
+so it removes co-evolution without adding solution discovery.
+\emph{NS-CSD} runs 500 iterations with $B{=}32$ contexts, $G{=}8$ members,
+horizon $H{=}8$, $W_{\max}{=}40$, a discovery step every $K{=}20$ iterations,
+learning rate $3\times10^{-4}$, clip 0.2, 4 epochs, $\beta_{\text{KL}}{=}0.02$,
+$c_{\text{el}}{=}0.5$ and $c_{\text{H}}{=}0.005$. Both NS-CSD and PPO+shield use
+about $1.35$M training environment steps; Sentinel used 200k co-evolution
+steps plus validation. The ablations remove one component at a time: shield
+discovery, the scenario curriculum, elite injection, the champion anchor with
+roll-back, CRN, or the shield altogether. \emph{GRPO+shield} removes all four
+discovery mechanisms. \emph{NS-CSD safety-weighted} sets $w_{\text{sev}}{=}2$.
+The main methods use 10 seeds (42--51), matching Sentinel. The secondary
+ablations use 5 seeds (42--46).
+
+\textbf{Protocols.} \emph{A (Sentinel-native):} Sentinel's own trained
+attacker for each seed drives its five scenarios exactly as in its evaluation
+script (5 episodes $\times$ 100 steps; leakage averaged over all steps).
+NS-CSD never saw these attackers, so this protocol measures transfer.
+\emph{B (attacker-agnostic):} open-loop scenarios from $\Xi$: benign, mild,
+strong, chaos, zero-shot ICMP, and four held-out stress tests. These are
+pulsing floods (period 10, duty 0.5), polymorphic floods (switching
+probability 0.5, mutation 0.7--1), boundary-rate floods (intensity 0.3--0.6)
+and ICMP-heavy chaos. Each scenario runs 20 episodes of 100 steps, and
+leakage is averaged over attacked steps. \emph{C (red team):} for each
+defender, a cross-entropy search (48 candidates, 8 rounds) over the full 14-d
+scenario space, ICMP included, minimises the composite score; the worst
+scenario found is then re-scored on fresh traffic. All defenders see
+identical traffic for a given seed and scenario, so comparisons are paired.
+
+\textbf{Statistics.} We report seed-level means with 95\,\% $t$-intervals.
+NS-CSD is compared with Sentinel and PPO+shield using paired $t$-tests and
+Wilcoxon signed-rank tests, with Holm correction across scenarios for each
+metric. Pareto relations use the joint criterion of~\cite{alfatemi2026sentinel}:
+quality $\uparrow$, leakage $\downarrow$, severe outages $\downarrow$. Counts are
+reported per 500 steps.

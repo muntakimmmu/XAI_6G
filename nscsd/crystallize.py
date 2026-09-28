@@ -46,3 +46,41 @@ def describe(tree: TreeDefender) -> str:
     for name, t in (("focus", tree.tf), ("threshold", tree.tt), ("drop", tree.td)):
         parts.append(f"## {name}\n" + export_text(t, feature_names=FEATURES, decimals=3))
     return "\n".join(parts)
+
+
+def _simplify(t, node, feats, reg, tol):
+    """Collapse sub-trees whose leaves all give the same decision; returns a nested rule."""
+    tr = t.tree_
+    if tr.children_left[node] == -1:
+        v = tr.value[node][0]
+        return ("leaf", float(v[0]) if reg else int(t.classes_[v.argmax()]))
+    left = _simplify(t, tr.children_left[node], feats, reg, tol)
+    right = _simplify(t, tr.children_right[node], feats, reg, tol)
+    if left[0] == right[0] == "leaf" and (abs(left[1] - right[1]) <= tol if reg else left[1] == right[1]):
+        return left
+    return ("split", feats[tr.feature[node]], float(tr.threshold[node]), left, right)
+
+
+def _render(r, depth, names):
+    pad = "  " * depth
+    if r[0] == "leaf":
+        return [pad + (names[r[1]] if names else f"{r[1]:.2f}")]
+    _, f, th, lo, hi = r
+    return ([f"{pad}if {f} <= {th:.3f}:"] + _render(lo, depth + 1, names)
+            + [f"{pad}else:  # {f} > {th:.3f}"] + _render(hi, depth + 1, names))
+
+
+def _leaves(r):
+    return 1 if r[0] == "leaf" else _leaves(r[3]) + _leaves(r[4])
+
+
+def simplified(tree: TreeDefender, tol=0.01):
+    """Operator-facing rule text with redundant splits merged, plus effective leaf counts."""
+    out, leaves = [], {}
+    focus_names = {0: "focus = SrcIP", 1: "focus = Protocol", 2: "focus = PktSize"}
+    for name, t, reg, names in (("focus", tree.tf, False, focus_names), ("threshold", tree.tt, True, None),
+                                ("drop", tree.td, True, None)):
+        r = _simplify(t, 0, FEATURES, reg, tol)
+        leaves[name] = _leaves(r)
+        out.append(f"## {name}  ({leaves[name]} effective leaves)\n" + "\n".join(_render(r, 0, names)))
+    return "\n\n".join(out), leaves

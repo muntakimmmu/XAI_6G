@@ -1,0 +1,38 @@
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize, >={Stealth[length=2mm]},
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=9mm, inner sep=3pt, fill=white},
+  neural/.style={box, fill=blue!7, draw=blue!55!black},
+  symb/.style={box, fill=orange!9, draw=orange!70!black},
+  disc/.style={box, fill=teal!8, draw=teal!60!black},
+  lab/.style={font=\scriptsize, align=center, text=black!70}]
+\node[disc, minimum width=30mm] (cur) {Scenario curriculum\\ \scriptsize regret vs.\ archive, ACCEL edits};
+\node[box, right=17mm of cur, minimum width=34mm] (fork) {Fork context into $G$ members\\ \scriptsize common random numbers};
+\node[neural, right=17mm of fork, minimum width=30mm] (pol) {GRPO policy $\pi_\theta$\\ \scriptsize critic-free, group advantages};
+\node[symb, below=9mm of pol, minimum width=30mm] (sh) {Symbolic shield $\mathcal{S}_\phi$\\ \scriptsize PanicGuard, Spoofing, ICMP};
+\node[box, below=9mm of fork, minimum width=34mm] (sim) {Simulator rollouts ($H$ steps)\\ \scriptsize verifiable composite reward};
+\node[disc, below=9mm of cur, minimum width=30mm] (arch) {Solution Archive (18 niches)\\ \scriptsize neural $|$ tree $|$ seed programs};
+\node[symb, below=9mm of arch, minimum width=30mm] (cry) {Rule crystallisation\\ \scriptsize depth-4 tree programs};
+\node[disc, below=9mm of sh, minimum width=30mm] (cert) {Shield discovery\\ \scriptsize ES probes + safety certificate};
+\node[neural, below=9mm of sim, minimum width=34mm] (champ) {Champion (policy + shield)\\ \scriptsize KL anchor, roll-back, deploy};
+\draw[->] (cur) -- node[lab, above]{contexts} (fork);
+\draw[->] (fork) -- node[lab, above]{members} (pol);
+\draw[->] (pol) -- node[lab, right]{$a_t$} (sh);
+\draw[->] (sh) -- node[lab, above]{$a^{\text{safe}}_t$} (sim);
+\draw[->] (sim.north east) -- node[lab, above left, pos=0.45]{$A_{b,g}$} (pol.south west);
+\draw[->] (arch) -- node[lab, above]{elite} (sim);
+\draw[->] (arch) -- node[lab, left]{regret} (cur);
+\draw[->] (champ) -- node[lab, above]{snapshots} (cry);
+\draw[->] (cry) -- (arch);
+\draw[->] (cert) -- node[lab, right]{$\phi$} (sh);
+\draw[->] (champ) -- (cert);
+\draw[->, dashed] (champ.north) -- node[lab, right]{$\pi_{\text{ref}}$} (sim.south);
+\end{tikzpicture}
+\caption{NS-CSD. Sentinel's attacker population, Hall of Fame and post-hoc checkpoint selection are
+replaced by one continuous discovery loop. Scenarios are proposed by regret against a monotone archive
+of neural and symbolic solutions. The defender improves from CRN-forked GRPO groups that include an
+archive elite and shield probes. The shield's parameters are re-discovered under a safety certificate.
+Blue: neural; orange: symbolic; teal: discovery.}
+\label{fig:arch}
+\end{figure*}

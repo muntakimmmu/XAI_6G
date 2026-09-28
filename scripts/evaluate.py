@@ -12,6 +12,7 @@ Protocol C  Adaptive red team: cross-entropy search over the full scenario space
 All defenders see identical traffic for a given (seed, scenario) (common random numbers).
 """
 import argparse
+import json
 import os
 import pickle
 import sys
@@ -54,11 +55,14 @@ def defenders(seed, runs, sentinel_models, physics):
     d["Random"] = RandomDefender(np.random.default_rng(seed + 1))
     for m in OURS:
         p = os.path.join(runs, physics, m, f"seed{seed}")
-        if not os.path.isdir(p):
+        if not os.path.exists(os.path.join(p, "meta.json")):
             continue
         shielded = m != "no_shield"
-        d[f"{m}"] = NetDefender(load_net(os.path.join(p, "champion.pt")), shielded)
-        d[f"{m}-final"] = NetDefender(load_net(os.path.join(p, "final.pt")), shielded)
+        meta = json.load(open(os.path.join(p, "meta.json")))
+        d[f"{m}"] = NetDefender(load_net(os.path.join(p, "champion.pt")), shielded,
+                                shield_kw=meta.get("champion_shield"))
+        d[f"{m}-final"] = NetDefender(load_net(os.path.join(p, "final.pt")), shielded,
+                                      shield_kw=meta.get("final_shield"))
         tp = os.path.join(p, "tree.pkl")
         if m == "nscsd" and os.path.exists(tp):
             with open(tp, "rb") as f:
@@ -109,7 +113,8 @@ def cem_redteam(defender, seed, physics, pop=48, iters=8, elite=0.2, eps=4, T=60
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", default="runs")
-    ap.add_argument("--physics", default="inline")
+    ap.add_argument("--physics", default="inline", help="simulator physics used for evaluation")
+    ap.add_argument("--train_physics", default="inline", help="which trained runs to load")
     ap.add_argument("--sentinel_models",
                     default="/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models")
     ap.add_argument("--out", default="results")
@@ -123,7 +128,7 @@ def main():
     rows = {"A": [], "B": [], "C": []}
     rules = []
     for seed in args.seeds:
-        defs = defenders(seed, args.runs, args.sentinel_models, args.physics)
+        defs = defenders(seed, args.runs, args.sentinel_models, args.train_physics)
         if "A" in args.protocols and args.sentinel_models and args.physics == "inline":
             att = load_sentinel_attacker(os.path.join(args.sentinel_models, f"best_benchmark_attacker_seed{seed}.pt"))
             for j, sc in enumerate(A_SCEN):

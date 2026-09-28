@@ -1,0 +1,11 @@
+scenario,defender_type,quality,leakage,severe,quality_pub,leakage_pub,severe_pub
+benign,PPO_Ablation_NoShield,1.0,0.0,0.0,1.0,0.0,0.0
+benign,Sentinel,1.0,0.0,0.0,1.0,0.0,0.0
+chaos_flash_crowd,PPO_Ablation_NoShield,0.701,0.834,22.0,0.699,0.834,25.3
+chaos_flash_crowd,Sentinel,0.701,0.836,22.0,0.699,0.836,25.3
+mild_attack,PPO_Ablation_NoShield,0.971,0.92,0.0,0.971,0.92,0.0
+mild_attack,Sentinel,0.971,0.921,0.0,0.971,0.921,0.0
+strong_attack,PPO_Ablation_NoShield,0.518,0.814,79.3,0.519,0.814,76.1
+strong_attack,Sentinel,0.519,0.815,78.2,0.519,0.815,75.0
+zero_shot_icmp,PPO_Ablation_NoShield,0.514,0.833,146.8,0.514,0.833,145.7
+zero_shot_icmp,Sentinel,0.529,0.747,0.0,0.529,0.747,0.0

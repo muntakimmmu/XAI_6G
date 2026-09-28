@@ -1,0 +1,16 @@
+scenario,who,panicguard_drop_per_500,quality,leakage,severe,benchmark
+boundary,Sentinel,5.0,0.913,0.905,0.0,0.007
+boundary,oracle,,0.84,0.661,0.0,0.179
+boundary,oracle+shield,,0.84,0.671,0.0,0.169
+chaos,Sentinel,185.667,0.848,0.737,10.667,0.016
+chaos,oracle,,0.782,0.536,6.333,0.161
+chaos,oracle+shield,,0.806,0.591,6.333,0.13
+icmp,Sentinel,5.0,0.526,0.733,13.667,-0.47
+icmp,oracle,,0.504,0.522,0.0,-0.268
+icmp,oracle+shield,,0.505,0.527,0.5,-0.273
+mild,Sentinel,332.667,0.992,0.988,0.0,0.004
+mild,oracle,,0.86,0.697,0.0,0.163
+mild,oracle+shield,,0.953,0.896,0.0,0.057
+strong,Sentinel,5.0,0.51,0.835,142.833,-0.718
+strong,oracle,,0.502,0.689,0.0,-0.437
+strong,oracle+shield,,0.502,0.698,0.0,-0.446
