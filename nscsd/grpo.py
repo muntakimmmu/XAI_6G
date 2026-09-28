@@ -121,7 +121,7 @@ def train(cfg: Config, log=print):
     champion_kw, shield_log = dict(DEFAULT), []
     probe_dir = np.zeros(len(BOUNDS))
     lam, champion_key = 0.0, (-1, -np.inf)
-    straddle_log, sev_log = [], []
+    span_log, sev_log = [], []
     archive = SolutionArchive()
     curriculum = DiscreteMaxMCCurriculum(rng) if cfg.curriculum == "maxmc_discrete" else ScenarioCurriculum(rng)
     stepper = _Stepper(cfg)
@@ -224,8 +224,8 @@ def train(cfg: Config, log=print):
             adv_c = np.where(cstd > 1e-6, (Cg - Cg.mean(1, keepdims=True)) / (cstd + 1e-8), 0.0).reshape(-1)
             adv = adv - lam * adv_c
         # fraction of groups whose members differ in severe-outage count (cost visible to the gradient)
-        straddle = float((Csev.reshape(cfg.B, cfg.G).max(1) != Csev.reshape(cfg.B, cfg.G).min(1)).mean())
-        straddle_log.append(straddle)
+        span_rate = float((Csev.reshape(cfg.B, cfg.G).max(1) != Csev.reshape(cfg.B, cfg.G).min(1)).mean())
+        span_log.append(span_rate)
         sev_log.append(float(Csev[~(elite_rows | safe_rows)].mean() / cfg.H))
         if eps is not None:  # group-relative evolution-strategy direction for the shield
             probe_dir += (adv[probe_rows, None] * eps[probe_rows]).sum(0)
@@ -335,7 +335,7 @@ def train(cfg: Config, log=print):
 
             rec = dict(iter=it, env_steps=env_steps, val=v, champion=champion_score, champion_iter=champion_iter,
                        shield_accept=shield_acc, lam=lam,
-                       straddle=float(np.mean(straddle_log[-cfg.eval_every:])),
+                       span_rate=float(np.mean(span_log[-cfg.eval_every:])),
                        train_sev=float(np.mean(sev_log[-cfg.eval_every:])), **{f"shield_{k}": x for k, x in stepper.shield_kw.items()},
                        tree_val=tree_v, rollbacks=rollbacks, archive_inserts=n_ins, regret=regret_mean,
                        archive=str(archive.composition()), minutes=(time.time() - t0) / 60,

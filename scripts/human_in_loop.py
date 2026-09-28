@@ -77,10 +77,10 @@ def main():
     scen = ["icmp", "mild", "boundary", "icmp_chaos", "strong", "chaos", "pulse", "polymorph"]
     rows = []
     for seed in range(42, 52):
-        p = f"runs/inline/straddle/seed{seed}"
+        p = f"runs/inline/span/seed{seed}"
         net = DefenderNet(); net.load_state_dict(torch.load(f"{p}/champion.pt", weights_only=True))
         kw = json.load(open(f"{p}/meta.json"))["champion_shield"]
-        defs = {"STRADDLE": NetDefender(net, True, shield_kw=kw),
+        defs = {"SPAN": NetDefender(net, True, shield_kw=kw),
                 "Sentinel": NetDefender(load_sentinel_defender(os.path.join(SM, f"best_benchmark_defender_seed{seed}.pt")), True)}
         for j, sc in enumerate(scen):
             for dn, d in defs.items():
@@ -104,12 +104,12 @@ def main():
         for (dn, op, acc), g in sub.groupby(["defender", "operator", "acc"], dropna=False):
             md.append(f"| {dn} | {op} | {acc} | {ci95(g.benchmark)[0]:.3f} ± {ci95(g.benchmark)[1]:.3f} | {g.quality.mean():.3f} | "
                       f"{g.leakage.mean():.3f} | {g.severe.mean():.1f} | {g.switches_per_ep.mean():.1f} |")
-        # paired: STRADDLE+operator(icmp-only, acc .9) vs Sentinel without operator
-        a = sub[(sub.defender == "STRADDLE") & (sub.operator == "icmp-only") & (sub.acc == 0.9)].sort_values("seed")
+        # paired: SPAN+operator(icmp-only, acc .9) vs Sentinel without operator
+        a = sub[(sub.defender == "SPAN") & (sub.operator == "icmp-only") & (sub.acc == 0.9)].sort_values("seed")
         b = sub[(sub.defender == "Sentinel") & (sub.operator == "none")].sort_values("seed")
         for m in ("benchmark", "severe", "quality", "leakage"):
             r = paired(a[m].values, b[m].values)
-            md.append(f"\nSTRADDLE+operator(icmp-only, acc 0.9) vs Sentinel (no operator), {m}: diff {r['diff']:+.3f}, p={r['t_p']:.2g}")
+            md.append(f"\nSPAN+operator(icmp-only, acc 0.9) vs Sentinel (no operator), {m}: diff {r['diff']:+.3f}, p={r['t_p']:.2g}")
     with open("results/human/HUMAN_IN_LOOP.md", "w") as f:
         f.write("\n".join(md) + "\n")
     print("wrote results/human/HUMAN_IN_LOOP.md")

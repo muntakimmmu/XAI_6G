@@ -2,7 +2,7 @@
 
 For a trained policy we fork CRN groups of G stochastic members from overload
 states (full-intensity floods) and measure
-  * straddle rate: fraction of groups whose members differ in severe-outage count,
+  * span rate: fraction of groups whose members differ in severe-outage count,
   * the policy's sampled drop-rate spread (std) in those states,
   * the severe-outage rate.
 If every member of a group suffers the same number of severe steps, the severe
@@ -47,8 +47,8 @@ def probe(net, kw, seed, scen="strong", B=64, G=8, H=8, W=20):
         og, info = E.step(og, t, tg, (typ[idx, t], inten[idx, t], mut[idx, t]), a, np.ones(B * G, bool))
         sev += info["severe"]
     sev = sev.reshape(B, G)
-    straddle = float((sev.max(1) != sev.min(1)).mean())
-    return dict(straddle_rate=straddle, drop_std_in_group=float(np.mean([x.std(1).mean() for x in drops])),
+    span_rate = float((sev.max(1) != sev.min(1)).mean())
+    return dict(span_rate=span_rate, drop_std_in_group=float(np.mean([x.std(1).mean() for x in drops])),
                 severe_rate=float(sev.mean() / H))
 
 
@@ -72,7 +72,7 @@ def main():
             rows.append(dict(method="Sentinel", seed=seed, scenario=sc, **probe(net, None, seed, sc)))
     df = pd.DataFrame(rows)
     df.to_csv(f"results/cliff_probe{tag}_by_seed.csv", index=False)
-    g = df.groupby(["scenario", "method"])[["straddle_rate", "drop_std_in_group", "severe_rate"]].agg(["mean", "std"]).round(3)
+    g = df.groupby(["scenario", "method"])[["span_rate", "drop_std_in_group", "severe_rate"]].agg(["mean", "std"]).round(3)
     print(g)
     with open(f"results/CLIFF_PROBE{tag.upper()}.md", "w") as f:
         f.write("# Cliff-visibility probe (overload states, G=8 CRN members, H=8)\n\n" + g.to_markdown() + "\n")

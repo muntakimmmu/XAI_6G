@@ -35,19 +35,24 @@ VARIANTS = {
     "nscsd_budget_safemember": dict(sev_budget=0.05, safe_member=True),
     "nscsd_cgrpo": dict(sev_budget=0.05, cost_norm="channel"),
     "nscsd_cgrpo_safemember": dict(sev_budget=0.05, cost_norm="channel", safe_member=True),
-    # STRADDLE: safety-straddling group-relative advantages with discrete minimax-regret (MaxMC) levels
-    "straddle": dict(curriculum="maxmc_discrete", sev_budget=0.05, safe_member=True),
-    "straddle_nosafe": dict(curriculum="maxmc_discrete", sev_budget=0.05),
-    "straddle_cgrpo": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="channel"),
+    # SPAN: Safety-sPANning group-relative policy optimization (outage budget + safe-side member,
+    # discrete minimax-regret curriculum scored with MaxMC)
+    "span": dict(curriculum="maxmc_discrete", sev_budget=0.05, safe_member=True),
+    "span_nosafe": dict(curriculum="maxmc_discrete", sev_budget=0.05),
+    "span_cgrpo": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="channel"),
     "maxmc_only": dict(curriculum="maxmc_discrete"),
-    "straddle_archive": dict(sev_budget=0.05, safe_member=True),
-    # simpler competitor to the safe-side member: keep entropy up so groups straddle by chance
-    "straddle_entropy": dict(curriculum="maxmc_discrete", sev_budget=0.05, ent_coef=0.03),
+    "span_archive": dict(sev_budget=0.05, safe_member=True),
+    # simpler competitor to the safe-side member: keep entropy up so groups span the boundary by chance
+    "span_entropy": dict(curriculum="maxmc_discrete", sev_budget=0.05, ent_coef=0.03),
     # simpler competitor: do not centre the cost channel (fixed-reference cost advantage)
-    "straddle_abscost": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="absolute"),
+    "span_abscost": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="absolute"),
     # both cost-visibility mechanisms together: channel-normalised cost + safe-side member
-    "straddle_cgrpo_safe": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="channel", safe_member=True),
+    "span_cgrpo_safe": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="channel", safe_member=True),
 }
+
+
+# The method was first called STRADDLE; the old names still resolve to the same configurations.
+VARIANTS.update({k.replace("span", "straddle"): v for k, v in list(VARIANTS.items()) if k.startswith("span")})
 
 
 def main():
