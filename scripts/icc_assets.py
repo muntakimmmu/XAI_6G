@@ -44,8 +44,9 @@ def fig_mechanism():
     d = d[d.scenario == "strong"]
     groups = [("grpo_vanilla", "GRPO", GRAY, "x"), ("nscsd", "NS-CSD (GRPO)", GRAY, "v"),
               ("ppo", "PPO", GRAY, "s"), ("Sentinel", "Sentinel", ORANGE, "D"),
-              ("span_cgrpo", "Constrained GRPO", AQUA, "^"), ("span", "SPAN6G", BLUE, "o")]
-    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.75))
+              ("span_nosafe", "budget only", GRAY, "<"), ("span_cgrpo", "Constrained GRPO", AQUA, "^"),
+              ("span_cgrpo_safe", "SPAN6G + C-GRPO", BLUE, "s"), ("span", "SPAN6G", BLUE, "o")]
+    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.85))
     for m, lab, c, mk in groups:
         g = d[d.method == m]
         kw = dict(color=c, marker=mk, s=12 if mk != "x" else 14, lw=0.8 if mk == "x" else 0.4,
@@ -58,7 +59,7 @@ def fig_mechanism():
     ax[1].set_xlabel("(b) Span rate")
     h, lab = ax[1].get_legend_handles_labels()
     fig.tight_layout(w_pad=0.8, rect=(0, 0, 1, 0.80))
-    fig.legend(h, lab, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.0), handletextpad=0.1,
+    fig.legend(h, lab, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 1.0), handletextpad=0.1,
                columnspacing=0.9, borderaxespad=0.0)
     fig.savefig(os.path.join(FIG, "mechanism.pdf"))
     plt.close(fig)

@@ -1,0 +1,16 @@
+Third-party code notice
+=======================
+
+nscsd/env.py and nscsd/shield.py are vectorised re-implementations of the
+simulator (simulation/env.py) and symbolic shield (agents/shield.py) released
+with Sentinel:
+
+  A. Alfatemi et al., "Sentinel: A Neuro-Symbolic Co-Evolutionary Framework for
+  Trustworthy Network and Service Management Against DDoS Attacks",
+  IEEE Transactions on Network and Service Management, vol. 23, 2026.
+  Code: https://github.com/AliAlfatemi/sentinel-ddos
+
+The Sentinel repository states that it is distributed under the MIT License
+(README badge; no LICENSE file was present in the checked-out revision).
+Sentinel's released model checkpoints are loaded, not redistributed, by the
+evaluation scripts in this repository.
