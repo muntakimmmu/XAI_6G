@@ -32,7 +32,8 @@ torch.set_num_threads(1)
 SEEDS = list(range(42, 52))
 A_SCEN = ["benign", "mild_attack", "strong_attack", "chaos_flash_crowd", "zero_shot_icmp"]
 OURS = ["nscsd", "no_shield_discovery", "no_discovery", "no_elite", "no_anchor", "no_crn", "no_shield",
-        "grpo_vanilla", "nscsd_safe", "ppo"]
+        "grpo_vanilla", "nscsd_safe", "ppo", "straddle", "straddle_nosafe", "straddle_cgrpo", "maxmc_only",
+        "straddle_archive", "straddle_entropy", "straddle_abscost"]
 
 
 def load_net(path):

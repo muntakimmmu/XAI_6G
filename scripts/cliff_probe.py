@@ -54,22 +54,27 @@ def probe(net, kw, seed, scen="strong", B=64, G=8, H=8, W=20):
 
 def main():
     rows = []
-    for m in ("nscsd", "grpo_vanilla", "ppo", "nscsd_safe"):
+    tag = "" if len(sys.argv) == 1 else "_pilot"
+    seeds = range(42, 45) if tag else range(42, 52)
+    methods = sys.argv[1:] or ["nscsd", "grpo_vanilla", "ppo", "nscsd_safe"]
+    for m in methods:
         for p in sorted(glob.glob(f"runs/inline/{m}/seed*/champion.pt")):
             seed = int(p.split("/")[-2][4:])
+            if seed not in seeds:
+                continue
             net = DefenderNet(); net.load_state_dict(torch.load(p, weights_only=True))
             meta = json.load(open(p.replace("champion.pt", "meta.json")))
             for sc in ("strong", "polymorph"):
                 rows.append(dict(method=m, seed=seed, scenario=sc, **probe(net, meta.get("champion_shield"), seed, sc)))
-    for seed in range(42, 52):
+    for seed in seeds:
         net = load_sentinel_defender(os.path.join(SM, f"best_benchmark_defender_seed{seed}.pt"))
         for sc in ("strong", "polymorph"):
             rows.append(dict(method="Sentinel", seed=seed, scenario=sc, **probe(net, None, seed, sc)))
     df = pd.DataFrame(rows)
-    df.to_csv("results/cliff_probe_by_seed.csv", index=False)
+    df.to_csv(f"results/cliff_probe{tag}_by_seed.csv", index=False)
     g = df.groupby(["scenario", "method"])[["straddle_rate", "drop_std_in_group", "severe_rate"]].agg(["mean", "std"]).round(3)
     print(g)
-    with open("results/CLIFF_PROBE.md", "w") as f:
+    with open(f"results/CLIFF_PROBE{tag.upper()}.md", "w") as f:
         f.write("# Cliff-visibility probe (overload states, G=8 CRN members, H=8)\n\n" + g.to_markdown() + "\n")
 
 
