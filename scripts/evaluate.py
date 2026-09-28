@@ -123,7 +123,10 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="*", default=SEEDS)
     ap.add_argument("--protocols", default="ABC")
     ap.add_argument("--eps_b", type=int, default=20)
+    ap.add_argument("--methods", nargs="*", default=None, help="restrict our trained variants (default: all)")
     args = ap.parse_args()
+    if args.methods is not None:
+        OURS[:] = args.methods
     if not os.path.isdir(args.sentinel_models):
         args.sentinel_models = None
     os.makedirs(args.out, exist_ok=True)
