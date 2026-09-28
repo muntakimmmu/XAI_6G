@@ -33,7 +33,8 @@ import torch
 from . import env as E
 from . import scenarios as S
 from .agents import NetDefender
-from .archive import ScenarioCurriculum, SolutionArchive, scenario_scores, seed_programs
+from .archive import (DiscreteMaxMCCurriculum, ScenarioCurriculum, SolutionArchive, scenario_scores,
+                      seed_programs)
 from .crystallize import crystallize
 from .policy import DefenderNet, kl_to
 from .rollout import run_open_loop, validation_score
@@ -78,7 +79,10 @@ class Config:
     shield_probes: int = 2       # group members that deploy under a perturbed shield
     # Delta-1: severe-outage budget (Lagrangian, dual ascent) + feasibility-first champion; <0 disables
     sev_budget: float = -1.0
-    lam_lr: float = 0.5
+    lam_lr: float = 4.0          # per validation step (every eval_every iterations)
+    # scenario curriculum: "archive" (regret vs. solution archive) or "maxmc_discrete"
+    # (minimax regret with the MaxMC estimator of Jiang et al. 2021 over a discrete level grid)
+    curriculum: str = "archive"
     # Delta-2: safe-side member moved along the symbolic monotone-safety direction (lower drop, higher threshold)
     safe_member: bool = False
     # how the severe-outage cost enters the advantage: "reward" (Lagrangian penalty inside R, then one
@@ -119,7 +123,7 @@ def train(cfg: Config, log=print):
     lam, champion_key = 0.0, (-1, -np.inf)
     straddle_log, sev_log = [], []
     archive = SolutionArchive()
-    curriculum = ScenarioCurriculum(rng)
+    curriculum = DiscreteMaxMCCurriculum(rng) if cfg.curriculum == "maxmc_discrete" else ScenarioCurriculum(rng)
     stepper = _Stepper(cfg)
     history, env_steps, rollbacks, bad = [], 0, 0, 0
     best_tree, best_tree_score, best_tree_fid = None, -np.inf, None
@@ -127,9 +131,10 @@ def train(cfg: Config, log=print):
 
     # Seed the archive with symbolic programs so regret is informative from the start.
     if cfg.discovery or cfg.elite:
-        cache = _ScoreCache(curriculum.scen, cfg.seed, cfg.physics, cfg.sev_w)
+        init_scen = curriculum.subset(64) if cfg.curriculum == "maxmc_discrete" else curriculum.scen
+        cache = _ScoreCache(init_scen, cfg.seed, cfg.physics, cfg.sev_w)
         for prog in seed_programs(shielded=cfg.shield):
-            archive.consider(prog, "seed-program", curriculum.scen, cache(prog), 0, cache.elites(archive))
+            archive.consider(prog, "seed-program", init_scen, cache(prog), 0, cache.elites(archive))
 
     for it in range(1, cfg.iters + 1):
         # ---------------- 1. contexts ----------------
@@ -203,9 +208,6 @@ def train(cfg: Config, log=print):
             R += r - cfg.shield_penalty * rep - (lam if cfg.cost_norm == "reward" else 0.0) * info["severe"]
             Csev += info["severe"]
         env_steps += n * cfg.H
-        if cfg.sev_budget >= 0:  # dual ascent on the on-policy severe-outage rate
-            on_rows = ~(elite_rows | safe_rows)
-            lam = max(0.0, lam + cfg.lam_lr * (Csev[on_rows].mean() / cfg.H - cfg.sev_budget))
 
         Rg = R.reshape(cfg.B, cfg.G)
         std = Rg.std(1, keepdims=True)
@@ -270,6 +272,8 @@ def train(cfg: Config, log=print):
                 if kw is not None:
                     stepper.shield_kw, det.shield_kw, v, per, shield_acc = kw, dict(kw), v_new, per_new, 1
                     shield_log.append(dict(iter=it, val=v, **kw))
+            if cfg.sev_budget >= 0:  # dual ascent: the budget is defined on the operator's validation battery
+                lam = max(0.0, lam + cfg.lam_lr * (per["sev_mean"] - cfg.sev_budget))
             if cfg.sev_budget >= 0:  # feasibility first, then composite
                 key = (1, v) if per["sev_mean"] <= cfg.sev_budget else (0, -per["sev_mean"])
             else:
@@ -300,7 +304,16 @@ def train(cfg: Config, log=print):
                     best_tree, best_tree_score, best_tree_fid = tree, tree_v, fid
 
             n_ins, regret_mean = 0, 0.0
-            if cfg.discovery or cfg.elite:
+            if cfg.curriculum == "maxmc_discrete":
+                curriculum.refresh(det, cfg.seed * 1000 + 7, cfg.physics, cfg.sev_w)  # same CRN every refresh
+                regret_mean = float(curriculum.regret.mean())
+            if cfg.curriculum == "maxmc_discrete" and cfg.elite:
+                allscen = curriculum.subset(64)
+                cache = _ScoreCache(allscen, cfg.seed * 1000 + it, cfg.physics, cfg.sev_w)
+                n_ins += archive.consider(det, "neural", allscen, cache(det), it, cache.elites(archive))
+                if cfg.crystallize:
+                    n_ins += archive.consider(tree, "tree", allscen, cache(tree), it, cache.elites(archive))
+            elif cfg.discovery or cfg.elite:
                 pool = curriculum.scen
                 cands = curriculum.propose(cfg.n_candidates) if cfg.discovery else np.zeros((0, S.DIM))
                 allscen = np.concatenate([pool, cands])

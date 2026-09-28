@@ -123,3 +123,60 @@ class ScenarioCurriculum:
         k = n // 2
         parents = self.scen[self.rng.choice(self.size, size=k, p=self.probs())]
         return np.concatenate([S.mutate(self.rng, parents), S.random_scenarios(self.rng, n - k)])
+
+
+def discrete_levels():
+    """Discrete level grid for minimax-regret training (ICMP held out):
+    dominant family x intensity band x mutation band x pulsing x flash crowds = 5*6*3*2*2 = 360 levels."""
+    fams = {"syn": [0, 1, 0, 0, 0, 0], "udp": [0, 0, 1, 0, 0, 0], "http": [0, 0, 0, 1, 0, 0],
+            "mixed": [0, 0, 0, 0, 0, 1], "switching": [1, 1, 1, 1, 0, 1]}
+    bands = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0), (1.0, 1.0)]
+    muts = [(0.0, 0.3), (0.3, 0.7), (0.7, 1.0)]
+    out, names = [], []
+    for fn, w in fams.items():
+        for ib in bands:
+            for mb in muts:
+                for pulse in (0, 1):
+                    for flash in (0.0, 0.05):
+                        out.append(S.make(w, stay=0.6 if fn == "switching" else 0.95, i=ib, m=mb,
+                                          period=10 if pulse else 0, duty=0.5 if pulse else 1.0, flash=flash))
+                        names.append(f"{fn}|i{ib[0]:.1f}-{ib[1]:.1f}|m{mb[0]:.1f}|p{pulse}|f{flash}")
+    return np.array(out), names
+
+
+class DiscreteMaxMCCurriculum:
+    """Minimax-regret curriculum over a fixed discrete level set, scored with the MaxMC
+    regret estimator of Jiang et al. (2021): reg(l) = max_{k<=now} J_k(l) - J_now(l), the best
+    score ever achieved on level l by any past policy snapshot minus the current policy's score.
+    Levels are replayed with rank-prioritised regret mixed with staleness (PLR sampling)."""
+
+    def __init__(self, rng, temperature=0.3, staleness=0.3):
+        self.rng = rng
+        self.scen, self.names = discrete_levels()
+        self.size = len(self.scen)
+        self.temperature, self.staleness = temperature, staleness
+        self.best = np.full(self.size, -np.inf)
+        self.regret = np.zeros(self.size)
+        self.last_seen = np.zeros(self.size)
+        self.clock = 0
+
+    probs = ScenarioCurriculum.probs
+
+    def sample(self, n, replay_p):
+        idx = self.rng.choice(self.size, size=n, p=self.probs())
+        uniform = self.rng.integers(0, self.size, n)
+        replay = self.rng.random(n) < replay_p
+        idx = np.where(replay, idx, uniform)
+        self.clock += 1
+        self.last_seen[idx] = self.clock
+        return self.scen[idx]
+
+    def refresh(self, defender, seed, physics="inline", sev_w=0.5):
+        """Score the current policy on every level (fixed CRN per level) and update MaxMC regret."""
+        cur = scenario_scores(defender, self.scen, seed, eps=2, T=50, physics=physics, sev_w=sev_w)
+        self.best = np.maximum(self.best, cur)
+        self.regret = self.best - cur
+        return cur
+
+    def subset(self, n):
+        return self.scen[self.rng.choice(self.size, size=min(n, self.size), replace=False)]

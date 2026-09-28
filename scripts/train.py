@@ -35,6 +35,14 @@ VARIANTS = {
     "nscsd_budget_safemember": dict(sev_budget=0.05, safe_member=True),
     "nscsd_cgrpo": dict(sev_budget=0.05, cost_norm="channel"),
     "nscsd_cgrpo_safemember": dict(sev_budget=0.05, cost_norm="channel", safe_member=True),
+    # STRADDLE: safety-straddling group-relative advantages with discrete minimax-regret (MaxMC) levels
+    "straddle": dict(curriculum="maxmc_discrete", sev_budget=0.05, safe_member=True),
+    "straddle_nosafe": dict(curriculum="maxmc_discrete", sev_budget=0.05),
+    "straddle_cgrpo": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="channel"),
+    "maxmc_only": dict(curriculum="maxmc_discrete"),
+    "straddle_archive": dict(sev_budget=0.05, safe_member=True),
+    # simpler competitor to the safe-side member: keep entropy up so groups straddle by chance
+    "straddle_entropy": dict(curriculum="maxmc_discrete", sev_budget=0.05, ent_coef=0.03),
 }
 
 
