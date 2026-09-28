@@ -105,8 +105,8 @@ def main():
     rows = []
     for m in VARIANTS:
         for h in glob.glob(f"runs/inline/{m}/seed*/history.csv"):
-            d = pd.read_csv(h)
-            if "span" not in d:
+            d = pd.read_csv(h).rename(columns={"straddle": "span_rate"})  # runs logged before the rename
+            if "span_rate" not in d:
                 continue
             late = d[d.iter > d.iter.max() - 100]
             rows.append(dict(method=m, span_late=late.span_rate.mean(), val_sev_final=d.val_sev_mean.iloc[-1],
