@@ -206,12 +206,18 @@ def train(cfg: Config, log=print):
                                 action, np.zeros(n, bool), cfg.physics)
             r = info[cfg.reward] if cfg.reward != "score" else info["score"] - (cfg.sev_w - 0.5) * info["severe"]
             R += r - cfg.shield_penalty * rep - (lam if cfg.cost_norm == "reward" else 0.0) * info["severe"]
+            # (for "channel"/"absolute" the objective R excludes the severe cost only through lam; the
+            #  composite score itself still contains Sentinel's 0.5 severe term)
             Csev += info["severe"]
         env_steps += n * cfg.H
 
         Rg = R.reshape(cfg.B, cfg.G)
         std = Rg.std(1, keepdims=True)
         adv = np.where(std > 1e-6, (Rg - Rg.mean(1, keepdims=True)) / (std + 1e-8), 0.0).reshape(-1)
+        if cfg.cost_norm == "absolute" and cfg.sev_budget >= 0:
+            # uncentred cost channel (fixed reference = budget), cf. fixed-reference advantages that avoid
+            # gradient starvation: the cost term survives even when every member of a group violates
+            adv = adv - lam * (Csev / cfg.H - cfg.sev_budget)
         if cfg.cost_norm == "channel" and cfg.sev_budget >= 0:
             Cg = Csev.reshape(cfg.B, cfg.G)
             cstd = Cg.std(1, keepdims=True)

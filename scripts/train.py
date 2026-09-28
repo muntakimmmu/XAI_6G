@@ -43,6 +43,8 @@ VARIANTS = {
     "straddle_archive": dict(sev_budget=0.05, safe_member=True),
     # simpler competitor to the safe-side member: keep entropy up so groups straddle by chance
     "straddle_entropy": dict(curriculum="maxmc_discrete", sev_budget=0.05, ent_coef=0.03),
+    # simpler competitor: do not centre the cost channel (fixed-reference cost advantage)
+    "straddle_abscost": dict(curriculum="maxmc_discrete", sev_budget=0.05, cost_norm="absolute"),
 }
 
 
