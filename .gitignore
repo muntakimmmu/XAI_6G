@@ -10,3 +10,8 @@ paper/*.bbl
 paper/*.blg
 paper/main.pdf
 results/**/*.log
+paper/icc/*.aux
+paper/icc/*.log
+paper/icc/*.out
+paper/icc/*.bbl
+paper/icc/*.blg

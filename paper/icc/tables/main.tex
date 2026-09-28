@@ -1,0 +1,28 @@
+\begin{table*}[t]
+\centering
+\caption{Attacker-agnostic Battery (Protocol B): Composite Score $\mathcal{B}$ ($\uparrow$), Severe Outages per 500 Steps ($\downarrow$) and Leakage ($\downarrow$), Mean over 10 Seeds}
+\label{tab:main}
+\setlength{\tabcolsep}{4.5pt}
+\footnotesize
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Composite $\mathcal{B}$ ($\uparrow$)} & \multicolumn{3}{c}{Severe outages / 500 steps ($\downarrow$)} & \multicolumn{3}{c}{Attack leakage ($\downarrow$)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(l){8-10}
+Scenario & Sentinel~\cite{alfatemi2026sentinel} & C-GRPO~\cite{girgis2026cgrpo} & SPAN6G & Sentinel & C-GRPO & SPAN6G & Sentinel & C-GRPO & SPAN6G \\
+\midrule
+Mild & 0.009 & \textbf{0.053} & 0.040\textsuperscript{\dag} & \textbf{0.0} & \textbf{0.0} & \textbf{0.0} & 0.983 & \textbf{0.917} & 0.941 \\
+Strong & -0.746 & -0.612 & \textbf{-0.583}\textsuperscript{\dag} & 155.2 & 85.9 & \textbf{38.9} & 0.852 & \textbf{0.789} & 0.814 \\
+Chaos/flash & -0.169 & \textbf{-0.114} & -0.123\textsuperscript{\dag} & 14.1 & 16.8 & \textbf{10.7} & 0.908 & \textbf{0.843} & 0.870 \\
+ICMP (zero-shot) & -0.474 & -0.474 & \textbf{-0.458}\textsuperscript{\dag} & \textbf{4.6} & 23.3 & 18.0 & 0.748 & 0.727 & \textbf{0.716} \\
+Pulsing$^\ast$ & -0.303 & -0.228 & \textbf{-0.225}\textsuperscript{\dag} & 60.5 & 37.7 & \textbf{16.1} & 0.877 & \textbf{0.825} & 0.847 \\
+Polymorphic$^\ast$ & -0.454 & -0.442 & \textbf{-0.430}\textsuperscript{\dag} & 14.9 & 24.0 & \textbf{14.2} & 0.905 & \textbf{0.868} & 0.890 \\
+Boundary-rate$^\ast$ & 0.003 & \textbf{0.084} & 0.071\textsuperscript{\dag} & \textbf{0.0} & \textbf{0.0} & \textbf{0.0} & 0.908 & \textbf{0.807} & 0.835 \\
+ICMP-chaos$^\ast$ & -0.299 & \textbf{-0.255} & -0.257\textsuperscript{\dag} & 25.4 & 25.2 & \textbf{20.9} & 0.829 & \textbf{0.783} & 0.800 \\
+\midrule
+Mean$\pm$CI & -0.304$\pm$0.014 & -0.248$\pm$0.009 & -0.246$\pm$0.009 & 34.4$\pm$9.5 & 26.6$\pm$17.8 & 14.8$\pm$3.3 & 0.876$\pm$0.013 & 0.820$\pm$0.016 & 0.839$\pm$0.013 \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+\parbox{\textwidth}{\scriptsize $^\ast$Held-out stress test (never used for training or model selection). Bold: best per metric. \dag\,SPAN6G better than Sentinel (paired $t$-test over seeds, Holm-corrected across scenarios, $p<0.05$). Last row: mean $\pm$ 95\% $t$-interval over seeds of the scenario average.}
+\end{table*}

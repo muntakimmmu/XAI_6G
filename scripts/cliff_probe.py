@@ -54,8 +54,9 @@ def probe(net, kw, seed, scen="strong", B=64, G=8, H=8, W=20):
 
 def main():
     rows = []
-    tag = "" if len(sys.argv) == 1 else "_pilot"
-    seeds = range(42, 45) if tag else range(42, 52)
+    full = os.environ.get("FULL") == "1"
+    tag = "" if len(sys.argv) == 1 else ("_final" if full else "_pilot")
+    seeds = range(42, 45) if tag == "_pilot" else range(42, 52)
     methods = sys.argv[1:] or ["nscsd", "grpo_vanilla", "ppo", "nscsd_safe"]
     for m in methods:
         for p in sorted(glob.glob(f"runs/inline/{m}/seed*/champion.pt")):
