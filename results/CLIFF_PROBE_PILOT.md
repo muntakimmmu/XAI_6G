@@ -1,6 +1,6 @@
 # Cliff-visibility probe (overload states, G=8 CRN members, H=8)
 
-|                                   |   ('straddle_rate', 'mean') |   ('straddle_rate', 'std') |   ('drop_std_in_group', 'mean') |   ('drop_std_in_group', 'std') |   ('severe_rate', 'mean') |   ('severe_rate', 'std') |
+|                                   |   ('span_rate', 'mean') |   ('span_rate', 'std') |   ('drop_std_in_group', 'mean') |   ('drop_std_in_group', 'std') |   ('severe_rate', 'mean') |   ('severe_rate', 'std') |
 |:----------------------------------|----------------------------:|---------------------------:|--------------------------------:|-------------------------------:|--------------------------:|-------------------------:|
 | ('polymorph', 'Sentinel')         |                       0.948 |                      0.036 |                           0.213 |                          0.014 |                     0.098 |                    0.026 |
 | ('polymorph', 'maxmc_only')       |                       0.599 |                      0.009 |                           0.141 |                          0.024 |                     0.075 |                    0.025 |
