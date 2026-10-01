@@ -23,7 +23,7 @@
 \maketitle
 
 \begin{abstract}
-Group Relative Policy Optimization (GRPO) can train 6G edge DDoS defenders without a critic or a learned attacker, but we show that it discards any safety cost shared by every rollout in a group. GRPO-trained defenders leak less traffic yet cause more severe outages than Sentinel, a co-evolutionary neuro-symbolic baseline. IMBANG adds one safe-side rollout per group, moved along a direction proven not to increase collateral damage, together with an outage budget. Over ten seeds, IMBANG beats Sentinel's checkpoints in all eight attack scenarios, cuts severe outages by 57\% and meets the outage budget in nine seeds.
+Sentinel combines PPO, a co-evolving attacker, and symbolic shielding for DDoS mitigation, yet severe outages persist under floods. We replace this loop with critic-free Group Relative Policy Optimization (GRPO) and show that group centring removes the marginal influence of an outage penalty whenever all rollouts share the same outage count. Naive GRPO reduces leakage while increasing outages. IMBANG adds one guaranteed no-less-safe rollout per group with an outage budget. Over ten seeds, IMBANG achieves higher composite scores than Sentinel in all eight scenarios, reduces severe outages by 57\%, and meets the outage budget in nine seeds.
 \end{abstract}
 
 \begin{IEEEkeywords}
