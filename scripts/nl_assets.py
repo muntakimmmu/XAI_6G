@@ -61,14 +61,14 @@ def table_main():
 \toprule
  & \multicolumn{3}{c}{Composite score} & \multicolumn{3}{c}{Severe outages} \\
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
-Scenario & Sentinel & C-GRPO & SPAN6G & Sentinel & C-GRPO & SPAN6G \\
+Scenario & Sentinel & C-GRPO & MIZAN & Sentinel & C-GRPO & MIZAN \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
 \end{tabular}}
 
 \vspace{2pt}
-\parbox{\columnwidth}{\scriptsize $^\ast$Held-out stress test. \dag\,SPAN6G above Sentinel, paired $t$-test, Holm-corrected, $p<0.05$. Bold: best.}
+\parbox{\columnwidth}{\scriptsize $^\ast$Held-out stress test. \dag\,MIZAN above Sentinel, paired $t$-test, Holm-corrected, $p<0.05$. Bold: best.}
 \end{table}
 """
     open(os.path.join(OUT, "tab_main.tex"), "w").write(tex)
@@ -83,8 +83,8 @@ def table_ablation():
     names = [("Sentinel", "Sentinel~\\cite{alfatemi2026sentinel}"), ("ppo", "PPO + shield (equal budget)"),
              ("nscsd", "GRPO, no budget"), ("span_nosafe", "GRPO + budget"),
              ("span_entropy", "\\;\\; + entropy bonus $\\times6$"), ("span_abscost", "\\;\\; + uncentred cost"),
-             ("span_cgrpo", "C-GRPO~\\cite{girgis2026cgrpo}"), ("span", "\\textbf{SPAN6G}"),
-             ("span_cgrpo_safe", "SPAN6G + C-GRPO normalisation")]
+             ("span_cgrpo", "C-GRPO~\\cite{girgis2026cgrpo}"), ("span", "\\textbf{MIZAN}"),
+             ("span_cgrpo_safe", "MIZAN + C-GRPO normalisation")]
     rows = []
     for d, lab in names:
         g = B[B.defender == d].groupby("seed")[["benchmark", "severe"]].mean()
@@ -110,7 +110,8 @@ Method & Score $\uparrow$ & Severe $\downarrow$ & Worst $\uparrow$ & Budget \\
 
 def main():
     os.makedirs(os.path.join(OUT, "figures"), exist_ok=True)
-    shutil.copy("paper/icc/figures/mechanism.pdf", os.path.join(OUT, "figures", "mechanism.pdf"))
+    for fig in ("mechanism.pdf", "tradeoff.pdf"):
+        shutil.copy(os.path.join("paper/icc/figures", fig), os.path.join(OUT, "figures", fig))
     shutil.copy("paper/icc/refs.bib", os.path.join(OUT, "refs.bib"))
     table_main()
     table_ablation()
