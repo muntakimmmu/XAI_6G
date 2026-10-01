@@ -120,3 +120,39 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def fig_dynamics():
+    """Validation outage rate and Lagrange multiplier over training (mean and 95% CI over 10 seeds)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    sys.path.insert(0, "scripts")
+    from icc_assets import AQUA, BLUE, GRAY, style
+    style()
+    series = [("span_nosafe", "budget only", GRAY, "--"), ("span_cgrpo", "C-GRPO", AQUA, "-"), ("span", "MIZAN", BLUE, "-")]
+    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.45))
+    for m, lab, c, ls in series:
+        hs = pd.concat([pd.read_csv(h).assign(seed=h) for h in glob.glob(f"runs/inline/{m}/seed*/history.csv")])
+        for k, (col, a) in enumerate((("val_sev_mean", ax[0]), ("lam", ax[1]))):
+            g = hs.groupby("iter")[col]
+            mu, se = g.mean(), g.std() / np.sqrt(g.count())
+            a.plot(mu.index, mu.values, color=c, ls=ls, lw=1.2, label=lab)
+            a.fill_between(mu.index, mu - 1.96 * se, mu + 1.96 * se, color=c, alpha=0.15, lw=0)
+    ax[0].axhline(0.05, color="#0b0b0b", lw=0.8, ls=":", label="budget $\\kappa$")
+    ax[0].set_ylabel("Val. outage rate")
+    ax[1].set_ylabel("Multiplier $\\lambda$")
+    ax[0].set_xlabel("(a) Iteration")
+    ax[1].set_xlabel("(b) Iteration")
+    h, lab = ax[1].get_legend_handles_labels()
+    h0, l0 = ax[0].get_legend_handles_labels()
+    h, lab = h + h0[-1:], lab + l0[-1:]
+    fig.tight_layout(w_pad=0.8, rect=(0, 0, 1, 0.84))
+    fig.legend(h, lab, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 1.0), borderaxespad=0,
+               columnspacing=1.0, handlelength=1.8)
+    fig.savefig(os.path.join(OUT, "figures", "dynamics.pdf"))
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    fig_dynamics()
