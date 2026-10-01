@@ -15,7 +15,7 @@
 
 \begin{document}
 
-\title{MESOTES: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation}
+\title{IMBANG: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation}
 
 \author{\IEEEauthorblockN{Author One\IEEEauthorrefmark{1}, Author Two\IEEEauthorrefmark{1}, and Author Three\IEEEauthorrefmark{2}}
 \IEEEauthorblockA{\IEEEauthorrefmark{1}Affiliation, City, Country\\
@@ -25,7 +25,7 @@ Email: \{author1, author2\}@institution.edu, author3@institution.edu}}
 \maketitle
 
 \begin{abstract}
-A DDoS controller at the 6G edge is useful only if it removes attack traffic without starving legitimate users. Sentinel, a recent neuro-symbolic mitigation framework, trains a shielded PPO agent against a co-evolving attacker. By its own account, that training deteriorates late in every run, and severe outages persist under heavy floods. Replacing co-evolution with critic-free Group Relative Policy Optimization (GRPO) removes the value network and the learned opponent. We show that it also introduces a new hazard. A penalty that every rollout in a group incurs cancels out of the group-normalised advantage, so the outage constraint vanishes whenever sampled actions stop straddling the outage boundary, and the leakage gradient drives the policy across it. Across 80 trained checkpoints, the share of groups that straddle the boundary follows the spread of the sampled actions ($r=0.91$) and moves against the severe-outage rate ($r=-0.61$). MESOTES restores the missing signal by adding one \emph{safe-side member} to each group. This member replays the policy's own action, shifted in a direction that provably cannot raise collateral damage. An outage budget enforced through a Lagrange multiplier and a discrete minimax-regret curriculum complete the method. Over ten seeds, MESOTES outscores Sentinel's published checkpoints in all eight attack scenarios after Holm correction. It lowers severe outages from 34.4 to 14.8 per 500 control steps, raises the red-team worst case from $-1.07$ to $-0.72$, and satisfies the outage budget in nine seeds out of ten, against three for Constrained GRPO. MESOTES also outperforms a compute-matched PPO baseline, and its deployed policy takes under 0.3\,ms per decision on a single CPU core.
+A DDoS controller at the 6G edge is useful only if it removes attack traffic without starving legitimate users. Sentinel, a recent neuro-symbolic mitigation framework, trains a shielded PPO agent against a co-evolving attacker. By its own account, that training deteriorates late in every run, and severe outages persist under heavy floods. Replacing co-evolution with critic-free Group Relative Policy Optimization (GRPO) removes the value network and the learned opponent. We show that it also introduces a new hazard. A penalty that every rollout in a group incurs cancels out of the group-normalised advantage, so the outage constraint vanishes whenever sampled actions stop straddling the outage boundary, and the leakage gradient drives the policy across it. Across 80 trained checkpoints, the share of groups that straddle the boundary follows the spread of the sampled actions ($r=0.91$) and moves against the severe-outage rate ($r=-0.61$). IMBANG restores the missing signal by adding one \emph{safe-side member} to each group. This member replays the policy's own action, shifted in a direction that provably cannot raise collateral damage. An outage budget enforced through a Lagrange multiplier and a discrete minimax-regret curriculum complete the method. Over ten seeds, IMBANG outscores Sentinel's published checkpoints in all eight attack scenarios after Holm correction. It lowers severe outages from 34.4 to 14.8 per 500 control steps, raises the red-team worst case from $-1.07$ to $-0.72$, and satisfies the outage budget in nine seeds out of ten, against three for Constrained GRPO. IMBANG also outperforms a compute-matched PPO baseline, and its deployed policy takes under 0.3\,ms per decision on a single CPU core.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -44,8 +44,8 @@ GRPO~\cite{shao2024deepseekmath} appears to address the first weakness naturally
 \textbf{Contributions.} The paper explains \emph{why} critic-free training makes DDoS defenders unsafe and shows how to prevent it. It makes three contributions.
 \begin{itemize}
 \item \emph{Diagnosis.} We identify and formalise the \emph{constraint-cancellation} effect: group-relative updates lose any safety cost that a whole group shares (Prop.~\ref{prop:cancel}). We confirm it on 80 trained checkpoints (Section~\ref{sec:mechanism}).
-\item \emph{Remedy with a guarantee.} MESOTES (Greek for \emph{the mean between extremes}) keeps every group straddling the outage boundary through a \emph{safe-side member}: the policy's own sample moved along a direction that, by the service model and the shield, cannot be less safe (Prop.~\ref{prop:safe}). It adds a Lagrangian outage budget and a discrete minimax-regret curriculum. The deployed policy has only 5.4k parameters and decides in under 0.3\,ms on one CPU core (Section~\ref{sec:method}).
-\item \emph{Evidence.} We compare MESOTES against Sentinel's own ten released checkpoints, a compute-matched PPO baseline, Constrained GRPO~\cite{girgis2026cgrpo} and the simplest alternative remedies. The evaluation runs on a test-verified port of Sentinel's simulator, under three protocols with paired statistical tests (Section~\ref{sec:eval}).
+\item \emph{Remedy with a guarantee.} IMBANG (Malay for \emph{balance}) keeps every group straddling the outage boundary through a \emph{safe-side member}: the policy's own sample moved along a direction that, by the service model and the shield, cannot be less safe (Prop.~\ref{prop:safe}). It adds a Lagrangian outage budget and a discrete minimax-regret curriculum. The deployed policy has only 5.4k parameters and decides in under 0.3\,ms on one CPU core (Section~\ref{sec:method}).
+\item \emph{Evidence.} We compare IMBANG against Sentinel's own ten released checkpoints, a compute-matched PPO baseline, Constrained GRPO~\cite{girgis2026cgrpo} and the simplest alternative remedies. The evaluation runs on a test-verified port of Sentinel's simulator, under three protocols with paired statistical tests (Section~\ref{sec:eval}).
 \end{itemize}
 
 % ===========================================================================
@@ -71,7 +71,7 @@ PPO-Lagrangian / CPO~\cite{achiam2017cpo} & -- & \checkmark & \checkmark & n/a (
 GRPO~\cite{shao2024deepseekmath} with penalty & \checkmark & \checkmark & \checkmark & -- \\
 Constrained GRPO~\cite{girgis2026cgrpo} & \checkmark & \checkmark & \checkmark & -- \\
 Sign advantage~\cite{nie2026starvation} & \checkmark & \checkmark & -- & fixed reference \\
-\textbf{MESOTES (ours)} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
+\textbf{IMBANG (ours)} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -123,12 +123,12 @@ Fig.~\ref{fig:mech} tests this account on 80 trained checkpoints in overload con
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/mechanism.pdf}
-\caption{Evidence for constraint cancellation under full-intensity floods (80 trained checkpoints, $G=8$ members sharing common random numbers). (a)~The span rate increases with the within-group spread of the drop action. (b)~A lower span rate coincides with more severe outages. MESOTES restores both quantities.}
+\caption{Evidence for constraint cancellation under full-intensity floods (80 trained checkpoints, $G=8$ members sharing common random numbers). (a)~The span rate increases with the within-group spread of the drop action. (b)~A lower span rate coincides with more severe outages. IMBANG restores both quantities.}
 \label{fig:mech}
 \end{figure}
 
 % ===========================================================================
-\section{The MESOTES Method}
+\section{The IMBANG Method}
 \label{sec:method}
 % ===========================================================================
 \textbf{Safe-side member.} One member of every group is reserved. At each step it takes the policy's sampled action $(\tau,f,d)$, draws $u\sim\mathcal{U}(0.2,0.8)$ once per rollout, and executes
@@ -143,16 +143,16 @@ For the same observation and traffic realisation, the collateral damage of the s
 By \eqref{eq:cd}, $\mathrm{CD}$ does not decrease with $d$, and it does not increase with $\tau$ because both $\alpha$ and $[\ell-C\tau]^+$ are non-increasing in $\tau$. The focus, and hence $\eta$, is left unchanged. Each shield rule is a per-coordinate $\min$ or $\max$ whose activation depends only on $(\mathbf{o}_t,f)$, so shielding preserves $\tilde d\le d$ and $\tilde\tau\ge\tau$. Finally, $\rho_t$ depends on the offered load and not on the action, so $\mathrm{SQ}=\rho(1-\mathrm{CD})$ inherits the ordering.
 \end{proof}
 
-Whenever the policy's samples cause outages that a less aggressive filter would avoid, the safe-side member can therefore supply the cost variation that Prop.~\ref{prop:cancel} shows to be necessary. The member influences the policy only through an advantage-weighted likelihood term, $-c\,[\hat A]^+\log\pi_\theta(\tilde a\,|\,\mathbf{o})$, so the policy moves towards it only when it outperformed the rest of its group. Monotonicity is a structural property that holds at every intensity and mutation level. MESOTES thus never needs to estimate where the outage threshold lies.
+Whenever the policy's samples cause outages that a less aggressive filter would avoid, the safe-side member can therefore supply the cost variation that Prop.~\ref{prop:cancel} shows to be necessary. The member influences the policy only through an advantage-weighted likelihood term, $-c\,[\hat A]^+\log\pi_\theta(\tilde a\,|\,\mathbf{o})$, so the policy moves towards it only when it outperformed the rest of its group. Monotonicity is a structural property that holds at every intensity and mutation level. IMBANG thus never needs to estimate where the outage threshold lies.
 
 \textbf{Outage budget and model selection.} The multiplier is adjusted by dual ascent on the measured validation outage rate, $\lambda\leftarrow[\lambda+\eta_\lambda(\hat\sigma-\kappa)]^+$. The checkpoint that is deployed is chosen feasibility first: among checkpoints with $\hat\sigma\le\kappa$, the one with the highest validation score.
 
 \textbf{Discrete minimax-regret levels.} In place of a learned attacker, training contexts are drawn from 360 discrete levels. These combine the attack family, six intensity bands, three mutation bands, pulsed or continuous flooding, and the presence of flash crowds, with ICMP excluded. Each level is scored by the MaxMC regret estimate~\cite{jiang2021robustplr}, $\mathrm{reg}(l)=\max_{k\le n}\hat J_k(l)-\hat J_n(l)$, computed with fixed common random numbers. Levels with high regret are revisited through prioritised level replay~\cite{jiang2021plr}.
 
-\textbf{Common learner.} Every GRPO variant in this study uses the same learner. Each group of $G=8$ members holds policy samples, one archive elite, two shield probes and, for MESOTES, the safe-side member. The learner is anchored by a KL term to the best validated checkpoint and tunes the PanicGuard parameters under an empirical safety certificate. The network is Sentinel's two-layer, 64-unit architecture with Beta and categorical heads, trained without a critic. Algorithm~\ref{alg:span} outlines one iteration.
+\textbf{Common learner.} Every GRPO variant in this study uses the same learner. Each group of $G=8$ members holds policy samples, one archive elite, two shield probes and, for IMBANG, the safe-side member. The learner is anchored by a KL term to the best validated checkpoint and tunes the PanicGuard parameters under an empirical safety certificate. The network is Sentinel's two-layer, 64-unit architecture with Beta and categorical heads, trained without a critic. Algorithm~\ref{alg:span} outlines one iteration.
 
 \begin{algorithm}[t]
-\caption{One MESOTES training iteration}
+\caption{One IMBANG training iteration}
 \label{alg:span}
 \small
 \begin{algorithmic}[1]
@@ -176,22 +176,22 @@ Whenever the policy's samples cause outages that a less aggressive filter would 
 \item \emph{PPO with shield}: an equal-budget baseline without co-evolution.
 \item \emph{Constrained GRPO (C-GRPO)}~\cite{girgis2026cgrpo}.
 \item Three minimal remedies applied on top of the same budget: no safe member, a six-fold entropy bonus, and an uncentred cost advantage in the spirit of~\cite{nie2026starvation}.
-\item MESOTES.
+\item IMBANG.
 \end{itemize}
-All trained methods share Sentinel's network, use seeds 42--51 and receive roughly $1.35$M simulator steps; Sentinel's released run used $0.2$M co-evolution steps. The PPO baseline therefore serves as a compute-matched control (1.34M against 1.36M steps for MESOTES). It isolates how much of any improvement over Sentinel comes from the larger budget and the absence of co-evolution rather than from MESOTES itself.
+All trained methods share Sentinel's network, use seeds 42--51 and receive roughly $1.35$M simulator steps; Sentinel's released run used $0.2$M co-evolution steps. The PPO baseline therefore serves as a compute-matched control (1.34M against 1.36M steps for IMBANG). It isolates how much of any improvement over Sentinel comes from the larger budget and the absence of co-evolution rather than from IMBANG itself.
 
-\textbf{Protocols.} Protocol~B (attacker-agnostic) covers eight attack scenarios, four of them held-out stress tests, with 20 episodes of 100 windows each. Protocol~A replays, for each seed, the attacker that Sentinel trained alongside its defender; for MESOTES this is a transfer test. Protocol~C is a red team that runs a cross-entropy search over the whole scenario space, ICMP included, for the scenario that hurts each defender most. All comparisons are paired by seed and traffic realisation. We report paired $t$-tests with Holm correction together with Wilcoxon signed-rank tests.
+\textbf{Protocols.} Protocol~B (attacker-agnostic) covers eight attack scenarios, four of them held-out stress tests, with 20 episodes of 100 windows each. Protocol~A replays, for each seed, the attacker that Sentinel trained alongside its defender; for IMBANG this is a transfer test. Protocol~C is a red team that runs a cross-entropy search over the whole scenario space, ICMP included, for the scenario that hurts each defender most. All comparisons are paired by seed and traffic realisation. We report paired $t$-tests with Holm correction together with Wilcoxon signed-rank tests.
 
 \input{tables/main.tex}
 
-\textbf{Comparison with Sentinel.} As Table~\ref{tab:main} shows, MESOTES achieves a significantly higher composite score than Sentinel in each of the eight attack scenarios after Holm correction. Averaged over scenarios, the scores are $-0.246$ and $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), while service quality is unchanged (0.739 against 0.738, not significant). In five of the eight scenarios MESOTES is no worse than Sentinel on quality, leakage and outages simultaneously: strong, chaos/flash, pulsing, polymorphic and ICMP-chaos. When the traffic is generated by Sentinel's own trained attackers (Protocol~A), MESOTES still scores higher ($-0.265$ against $-0.332$, $p=0.019$) and lets less attack traffic through (0.778 against 0.830, $p=0.018$). The worst case uncovered by the red team improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$).
+\textbf{Comparison with Sentinel.} As Table~\ref{tab:main} shows, IMBANG achieves a significantly higher composite score than Sentinel in each of the eight attack scenarios after Holm correction. Averaged over scenarios, the scores are $-0.246$ and $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), while service quality is unchanged (0.739 against 0.738, not significant). In five of the eight scenarios IMBANG is no worse than Sentinel on quality, leakage and outages simultaneously: strong, chaos/flash, pulsing, polymorphic and ICMP-chaos. When the traffic is generated by Sentinel's own trained attackers (Protocol~A), IMBANG still scores higher ($-0.265$ against $-0.332$, $p=0.019$) and lets less attack traffic through (0.778 against 0.830, $p=0.018$). The worst case uncovered by the red team improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$).
 
-\textbf{Is the gain due to the training budget?} Only in part. The compute-matched PPO baseline already improves on Sentinel ($-0.276$ against $-0.304$ in Protocol~B), which shows the benefit of dropping co-evolution and training on the operator's own score. MESOTES nevertheless beats this baseline at the same budget: $+0.030$ in Protocol~B ($p=2\times10^{-7}$) and $+0.050$ in Protocol~A ($p=0.011$), with less leakage in both (0.839 against 0.867, $p=0.002$). It also has fewer severe outages (14.8 against 19.6) and a better red-team worst case ($-0.72$ against $-0.79$), although these two differences are not significant.
+\textbf{Is the gain due to the training budget?} Only in part. The compute-matched PPO baseline already improves on Sentinel ($-0.276$ against $-0.304$ in Protocol~B), which shows the benefit of dropping co-evolution and training on the operator's own score. IMBANG nevertheless beats this baseline at the same budget: $+0.030$ in Protocol~B ($p=2\times10^{-7}$) and $+0.050$ in Protocol~A ($p=0.011$), with less leakage in both (0.839 against 0.867, $p=0.002$). It also has fewer severe outages (14.8 against 19.6) and a better red-team worst case ($-0.72$ against $-0.79$), although these two differences are not significant.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/tradeoff.pdf}
-\caption{Trade-off between severe outages and attack leakage (Protocol~B, averaged over the eight attack scenarios, with 95\% confidence intervals over ten seeds). Only MESOTES lowers both quantities relative to Sentinel.}
+\caption{Trade-off between severe outages and attack leakage (Protocol~B, averaged over the eight attack scenarios, with 95\% confidence intervals over ten seeds). Only IMBANG lowers both quantities relative to Sentinel.}
 \label{fig:tradeoff}
 \end{figure}
 
@@ -203,18 +203,18 @@ All trained methods share Sentinel's network, use seeds 42--51 and receive rough
 \item \emph{A Lagrangian budget without the safe member} is satisfied in only one seed out of ten, even though the multiplier climbs to $\bar\lambda\approx7.7$. This matches Prop.~\ref{prop:cancel}: a larger $\lambda$ has no effect on groups whose members all violate the constraint.
 \item \emph{An entropy bonus or an uncentred cost} does not restore feasibility either (zero and one seed respectively).
 \item \emph{C-GRPO} meets the budget in three seeds.
-\item \emph{MESOTES} meets it in nine, with a final multiplier of only $\bar\lambda\approx0.4$. Its composite score matches C-GRPO's ($p=0.47$), with higher quality ($+0.008$, $p=0.007$) and fewer outages (14.8 against 26.6), in exchange for slightly more leakage (0.839 against 0.820).
-\item \emph{MESOTES with C-GRPO's channel-wise normalisation} lowers outages further to 12.1 (Wilcoxon $p=0.006$ against C-GRPO).
+\item \emph{IMBANG} meets it in nine, with a final multiplier of only $\bar\lambda\approx0.4$. Its composite score matches C-GRPO's ($p=0.47$), with higher quality ($+0.008$, $p=0.007$) and fewer outages (14.8 against 26.6), in exchange for slightly more leakage (0.839 against 0.820).
+\item \emph{IMBANG with C-GRPO's channel-wise normalisation} lowers outages further to 12.1 (Wilcoxon $p=0.006$ against C-GRPO).
 \end{itemize}
-In overload conditions, the final MESOTES policies maintain a drop spread of 0.18 and a severe-outage rate of 0.19. Without the safe member, that rate is 0.35 (Fig.~\ref{fig:mech}).
+In overload conditions, the final IMBANG policies maintain a drop spread of 0.18 and a severe-outage rate of 0.19. Without the safe member, that rate is 0.35 (Fig.~\ref{fig:mech}).
 
 \textbf{Deployment cost.} The deployed policy consists of the actor network and the rule-based shield. The actor has 5{,}447 parameters (21.8\,kB in 32-bit floating point) and needs about $5.3\times10^{3}$ multiply--accumulate operations per decision. On a single 2.1\,GHz Xeon core, one decision, including shielding, takes 0.24\,ms in PyTorch and 12\,$\mu$s as a plain NumPy forward pass. This is several orders of magnitude below the sub-second control windows of edge scrubbing, so the controller can run alongside the user-plane function or on a MEC host without dedicated accelerators. Training involves no extra inference cost at deployment: the safe-side member, the budget and the curriculum are used only in the digital twin.
 
 \textbf{Limitations.}
 \begin{itemize}
-\item MESOTES does not surpass C-GRPO on the composite score; its advantage lies in reliably honouring the outage budget and in fewer outages.
-\item Under zero-shot ICMP floods, MESOTES incurs more severe outages than Sentinel (18.0 against 4.6, not significant). A simulated operator playbook that reuses Sentinel's own ICMP constants removes the gap, with 2.1 severe windows at 90\% recognition accuracy.
-\item On mild and boundary-rate floods, MESOTES gives up about 0.01 of service quality in return for 4--7 points less leakage.
+\item IMBANG does not surpass C-GRPO on the composite score; its advantage lies in reliably honouring the outage budget and in fewer outages.
+\item Under zero-shot ICMP floods, IMBANG incurs more severe outages than Sentinel (18.0 against 4.6, not significant). A simulated operator playbook that reuses Sentinel's own ICMP constants removes the gap, with 2.1 severe windows at 90\% recognition accuracy.
+\item On mild and boundary-rate floods, IMBANG gives up about 0.01 of service quality in return for 4--7 points less leakage.
 \item Prop.~\ref{prop:safe} relies on congestion being evaluated on the offered load, as in Sentinel's simulator.
 \item All results are simulation-based; replaying real traces such as 5G-NIDD remains future work.
 \end{itemize}
@@ -222,7 +222,7 @@ In overload conditions, the final MESOTES policies maintain a drop spread of 0.1
 % ===========================================================================
 \section{Conclusion}
 % ===========================================================================
-Training a neuro-symbolic DDoS defender with critic-free group-relative updates does away with the value network and the adversarial training loop. The price is that any safety cost borne by a whole group silently disappears from the update. MESOTES restores that cost with a single safe-side member per group, constructed from a monotone safety direction guaranteed by the service model. The resulting defender outperforms the co-evolutionary Sentinel in every attack scenario of an attacker-agnostic benchmark and more than halves its severe outages. It also meets an operator outage budget far more consistently than Constrained GRPO, and it beats a compute-matched PPO baseline. With 5.4k parameters and sub-millisecond decisions, it is light enough for deployment at the edge. Validating MESOTES on replayed real traffic is the next step. The source code, configurations and per-seed results accompany this paper.
+Training a neuro-symbolic DDoS defender with critic-free group-relative updates does away with the value network and the adversarial training loop. The price is that any safety cost borne by a whole group silently disappears from the update. IMBANG restores that cost with a single safe-side member per group, constructed from a monotone safety direction guaranteed by the service model. The resulting defender outperforms the co-evolutionary Sentinel in every attack scenario of an attacker-agnostic benchmark and more than halves its severe outages. It also meets an operator outage budget far more consistently than Constrained GRPO, and it beats a compute-matched PPO baseline. With 5.4k parameters and sub-millisecond decisions, it is light enough for deployment at the edge. Validating IMBANG on replayed real traffic is the next step. The source code, configurations and per-seed results accompany this paper.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}

@@ -61,14 +61,14 @@ def table_main():
 \toprule
  & \multicolumn{3}{c}{Composite score} & \multicolumn{3}{c}{Severe outages} \\
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
-Scenario & Sentinel & C-GRPO & MESOTES & Sentinel & C-GRPO & MESOTES \\
+Scenario & Sentinel & C-GRPO & IMBANG & Sentinel & C-GRPO & IMBANG \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
 \end{tabular}}
 
 \vspace{2pt}
-\parbox{\columnwidth}{\scriptsize $^\ast$Held-out stress test. \dag\,MESOTES above Sentinel, paired $t$-test, Holm-corrected, $p<0.05$. Bold: best.}
+\parbox{\columnwidth}{\scriptsize $^\ast$Held-out stress test. \dag\,IMBANG above Sentinel, paired $t$-test, Holm-corrected, $p<0.05$. Bold: best.}
 \end{table}
 """
     open(os.path.join(OUT, "tab_main.tex"), "w").write(tex)
@@ -83,8 +83,8 @@ def table_ablation():
     names = [("Sentinel", "Sentinel~\\cite{alfatemi2026sentinel}"), ("ppo", "PPO + shield (equal budget)"),
              ("nscsd", "GRPO, no budget"), ("span_nosafe", "GRPO + budget"),
              ("span_entropy", "\\;\\; + entropy bonus $\\times6$"), ("span_abscost", "\\;\\; + uncentred cost"),
-             ("span_cgrpo", "C-GRPO~\\cite{girgis2026cgrpo}"), ("span", "\\textbf{MESOTES}"),
-             ("span_cgrpo_safe", "MESOTES + C-GRPO normalisation")]
+             ("span_cgrpo", "C-GRPO~\\cite{girgis2026cgrpo}"), ("span", "\\textbf{IMBANG}"),
+             ("span_cgrpo_safe", "IMBANG + C-GRPO normalisation")]
     rows = []
     for d, lab in names:
         g = B[B.defender == d].groupby("seed")[["benchmark", "severe"]].mean()
@@ -130,7 +130,7 @@ def fig_dynamics():
     sys.path.insert(0, "scripts")
     from icc_assets import AQUA, BLUE, GRAY, style
     style()
-    series = [("span_nosafe", "budget only", GRAY, "--"), ("span_cgrpo", "C-GRPO", AQUA, "-"), ("span", "MESOTES", BLUE, "-")]
+    series = [("span_nosafe", "budget only", GRAY, "--"), ("span_cgrpo", "C-GRPO", AQUA, "-"), ("span", "IMBANG", BLUE, "-")]
     fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.45))
     for m, lab, c, ls in series:
         hs = pd.concat([pd.read_csv(h).assign(seed=h) for h in glob.glob(f"runs/inline/{m}/seed*/history.csv")])

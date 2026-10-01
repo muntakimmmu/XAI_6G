@@ -45,7 +45,7 @@ def fig_mechanism():
     groups = [("grpo_vanilla", "GRPO", GRAY, "x"), ("nscsd", "NS-CSD (GRPO)", GRAY, "v"),
               ("ppo", "PPO", GRAY, "s"), ("Sentinel", "Sentinel", ORANGE, "D"),
               ("span_nosafe", "budget only", GRAY, "<"), ("span_cgrpo", "Constrained GRPO", AQUA, "^"),
-              ("span_cgrpo_safe", "MESOTES + C-GRPO", BLUE, "s"), ("span", "MESOTES", BLUE, "o")]
+              ("span_cgrpo_safe", "IMBANG + C-GRPO", BLUE, "s"), ("span", "IMBANG", BLUE, "o")]
     fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.85))
     for m, lab, c, mk in groups:
         g = d[d.method == m]
@@ -77,7 +77,7 @@ def fig_tradeoff():
     B = load("B")
     agg = B.groupby(["defender", "seed"])[["leakage", "severe"]].mean().reset_index()
     show = [("Sentinel", "Sentinel", ORANGE, "D"), ("span_cgrpo", "C-GRPO", AQUA, "^"),
-            ("span", "MESOTES", BLUE, "o"), ("ppo", "PPO+shield", GRAY, "s"),
+            ("span", "IMBANG", BLUE, "o"), ("ppo", "PPO+shield", GRAY, "s"),
             ("span_nosafe", None, GRAY, "<"), ("span_entropy", None, GRAY, ">"), ("span_abscost", None, GRAY, "P")]
     fig, ax = plt.subplots(figsize=(3.5, 1.8))
     offs = {"Sentinel": (0.002, 4, "left"), "span_cgrpo": (0.003, 3, "left"), "span": (0.003, -6, "left"),
@@ -153,14 +153,14 @@ def table_main():
 \toprule
  & \multicolumn{3}{c}{Composite $\mathcal{B}$ ($\uparrow$)} & \multicolumn{3}{c}{Severe outages / 500 steps ($\downarrow$)} & \multicolumn{3}{c}{Attack leakage ($\downarrow$)} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(l){8-10}
-Scenario & Sentinel~\cite{alfatemi2026sentinel} & C-GRPO~\cite{girgis2026cgrpo} & MESOTES & Sentinel & C-GRPO & MESOTES & Sentinel & C-GRPO & MESOTES \\
+Scenario & Sentinel~\cite{alfatemi2026sentinel} & C-GRPO~\cite{girgis2026cgrpo} & IMBANG & Sentinel & C-GRPO & IMBANG & Sentinel & C-GRPO & IMBANG \\
 \midrule
 """ + body + r"""
 \bottomrule
 \end{tabular}
 
 \vspace{2pt}
-\parbox{\textwidth}{\scriptsize $^\ast$Held-out stress test (never used for training or model selection). Bold: best per metric. \dag\,MESOTES better than Sentinel (paired $t$-test over seeds, Holm-corrected across scenarios, $p<0.05$). Last row: mean $\pm$ 95\% $t$-interval over seeds of the scenario average.}
+\parbox{\textwidth}{\scriptsize $^\ast$Held-out stress test (never used for training or model selection). Bold: best per metric. \dag\,IMBANG better than Sentinel (paired $t$-test over seeds, Holm-corrected across scenarios, $p<0.05$). Last row: mean $\pm$ 95\% $t$-interval over seeds of the scenario average.}
 \end{table*}
 """
     open(os.path.join(TAB, "main.tex"), "w").write(tex)
@@ -179,7 +179,7 @@ def table_ablation():
              ("nscsd", "GRPO (no budget)"), ("maxmc_only", "\\;+ MaxMC levels"),
              ("span_nosafe", "\\;+ budget"), ("span_entropy", "\\;+ budget, entropy$\\times$6"),
              ("span_abscost", "\\;+ budget, uncentred cost"), ("span_cgrpo", "\\;+ budget, C-GRPO~\\cite{girgis2026cgrpo}"),
-             ("span", "\\textbf{MESOTES} (+ safe member)"), ("span_cgrpo_safe", "MESOTES + C-GRPO norm.")]
+             ("span", "\\textbf{IMBANG} (+ safe member)"), ("span_cgrpo_safe", "IMBANG + C-GRPO norm.")]
     lines = []
     for d, lab in names:
         gb = B[B.defender == d].groupby("seed")[["benchmark", "severe"]].mean()
