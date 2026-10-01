@@ -9,7 +9,7 @@
 \node[box, minimum width=11mm] (gnb) at (1.4, 0) {gNB/UPF};
 \node[sy, minimum width=17mm] (scr) at (3.85, 0) {Edge scrubber\\$(\tau,f,d)$};
 \node[box, minimum width=10mm] (mec) at (6.35, 0) {MEC\\service};
-\node[ag, minimum width=19mm] (pol) at (5.55, 1.6) {MIZAN policy\\$\pi_\theta(a\,|\,\mathbf{o})$};
+\node[ag, minimum width=19mm] (pol) at (5.55, 1.6) {WASAT policy\\$\pi_\theta(a\,|\,\mathbf{o})$};
 \node[sy, minimum width=15mm] (sh) at (2.2, 1.6) {Symbolic\\shield $\mathcal{S}_\phi$};
 \node[tr, text width=58mm] (twin) at (2.75,-1.45) {Digital-twin training: $G$ forked rollouts per context with shared random numbers; $G{-}1$ policy members plus one \textbf{safe-side member}; outage budget $\lambda$; MaxMC levels.};
 \draw[->] (ue.east) -- (gnb.west);

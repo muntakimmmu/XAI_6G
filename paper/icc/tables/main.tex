@@ -8,7 +8,7 @@
 \toprule
  & \multicolumn{3}{c}{Composite $\mathcal{B}$ ($\uparrow$)} & \multicolumn{3}{c}{Severe outages / 500 steps ($\downarrow$)} & \multicolumn{3}{c}{Attack leakage ($\downarrow$)} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(l){8-10}
-Scenario & Sentinel~\cite{alfatemi2026sentinel} & C-GRPO~\cite{girgis2026cgrpo} & MIZAN & Sentinel & C-GRPO & MIZAN & Sentinel & C-GRPO & MIZAN \\
+Scenario & Sentinel~\cite{alfatemi2026sentinel} & C-GRPO~\cite{girgis2026cgrpo} & WASAT & Sentinel & C-GRPO & WASAT & Sentinel & C-GRPO & WASAT \\
 \midrule
 Mild & 0.009 & \textbf{0.053} & 0.040\textsuperscript{\dag} & \textbf{0.0} & \textbf{0.0} & \textbf{0.0} & 0.983 & \textbf{0.917} & 0.941 \\
 Strong & -0.746 & -0.612 & \textbf{-0.583}\textsuperscript{\dag} & 155.2 & 85.9 & \textbf{38.9} & 0.852 & \textbf{0.789} & 0.814 \\
@@ -24,5 +24,5 @@ Mean$\pm$CI & -0.304$\pm$0.014 & -0.248$\pm$0.009 & -0.246$\pm$0.009 & 34.4$\pm$
 \end{tabular}
 
 \vspace{2pt}
-\parbox{\textwidth}{\scriptsize $^\ast$Held-out stress test (never used for training or model selection). Bold: best per metric. \dag\,MIZAN better than Sentinel (paired $t$-test over seeds, Holm-corrected across scenarios, $p<0.05$). Last row: mean $\pm$ 95\% $t$-interval over seeds of the scenario average.}
+\parbox{\textwidth}{\scriptsize $^\ast$Held-out stress test (never used for training or model selection). Bold: best per metric. \dag\,WASAT better than Sentinel (paired $t$-test over seeds, Holm-corrected across scenarios, $p<0.05$). Last row: mean $\pm$ 95\% $t$-interval over seeds of the scenario average.}
 \end{table*}
