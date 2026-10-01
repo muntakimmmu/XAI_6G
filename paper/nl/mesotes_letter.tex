@@ -13,17 +13,17 @@
 
 \begin{document}
 
-\title{WASAT: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation}
+\title{MESOTES: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation}
 
 \author{Author~One, Author~Two, and Author~Three%
 \thanks{The authors are with Affiliation, City, Country (e-mail: author1@institution.edu; author2@institution.edu; author3@institution.edu).}}
 
-\markboth{IEEE Networking Letters}{WASAT: Balancing DDoS Mitigation and Service Outages}
+\markboth{IEEE Networking Letters}{MESOTES: Balancing DDoS Mitigation and Service Outages}
 
 \maketitle
 
 \begin{abstract}
-Group Relative Policy Optimization (GRPO) can train 6G edge DDoS defenders without a critic or a learned attacker, but we show that it discards any safety cost shared by every rollout in a group. GRPO-trained defenders leak less traffic yet cause more severe outages than Sentinel, a co-evolutionary neuro-symbolic baseline. WASAT adds one safe-side rollout per group, moved along a direction proven not to increase collateral damage, together with an outage budget. Over ten seeds, WASAT beats Sentinel's checkpoints in all eight attack scenarios, cuts severe outages by 57\% and meets the outage budget in nine seeds.
+Group Relative Policy Optimization (GRPO) can train 6G edge DDoS defenders without a critic or a learned attacker, but we show that it discards any safety cost shared by every rollout in a group. GRPO-trained defenders leak less traffic yet cause more severe outages than Sentinel, a co-evolutionary neuro-symbolic baseline. MESOTES adds one safe-side rollout per group, moved along a direction proven not to increase collateral damage, together with an outage budget. Over ten seeds, MESOTES beats Sentinel's checkpoints in all eight attack scenarios, cuts severe outages by 57\% and meets the outage budget in nine seeds.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -53,12 +53,12 @@ PPO-Lagrangian / CPO~\cite{achiam2017cpo} & -- & \checkmark & \checkmark & n/a (
 GRPO~\cite{shao2024deepseekmath} with penalty & \checkmark & \checkmark & \checkmark & -- \\
 Constrained GRPO~\cite{girgis2026cgrpo} & \checkmark & \checkmark & \checkmark & -- \\
 Sign advantage~\cite{nie2026starvation} & \checkmark & \checkmark & -- & fixed reference \\
-\textbf{WASAT (ours)} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
+\textbf{MESOTES (ours)} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-This letter makes three contributions. First, it formalises this \emph{constraint-cancellation} effect and confirms it on 80 trained checkpoints. Second, it proposes WASAT (Arabic for \emph{the balanced middle}), whose \emph{safe-side member} keeps every group straddling the outage boundary, with a monotonicity guarantee. Third, it compares WASAT with Sentinel's released checkpoints, a compute-matched PPO baseline, Constrained GRPO and the simplest alternative remedies over ten seeds.
+This letter makes three contributions. First, it formalises this \emph{constraint-cancellation} effect and confirms it on 80 trained checkpoints. Second, it proposes MESOTES (Greek for \emph{the mean between extremes}), whose \emph{safe-side member} keeps every group straddling the outage boundary, with a monotonicity guarantee. Third, it compares MESOTES with Sentinel's released checkpoints, a compute-matched PPO baseline, Constrained GRPO and the simplest alternative remedies over ten seeds.
 
 % ===========================================================================
 \section{System Model}
@@ -103,10 +103,10 @@ Fig.~\ref{fig:mech} tests this explanation on 80 trained checkpoints under overl
 \end{figure}
 
 % ===========================================================================
-\section{WASAT}
+\section{MESOTES}
 \label{sec:method}
 % ===========================================================================
-WASAT reserves one \emph{safe-side member} per group. At each window it takes the policy's sample $(\tau,f,d)$, draws $u\sim\mathcal{U}(0.2,0.8)$ once per rollout, and executes $\tilde d=u\,d$, $\tilde\tau=\tau+(1-u)(1-\tau)$ and $\tilde f=f$.
+MESOTES reserves one \emph{safe-side member} per group. At each window it takes the policy's sample $(\tau,f,d)$, draws $u\sim\mathcal{U}(0.2,0.8)$ once per rollout, and executes $\tilde d=u\,d$, $\tilde\tau=\tau+(1-u)(1-\tau)$ and $\tilde f=f$.
 
 \begin{proposition}\label{prop:safe}
 For identical observations and traffic, the safe-side member's collateral damage after shielding never exceeds that of the policy member, so it never incurs more severe outages.
@@ -115,17 +115,17 @@ For identical observations and traffic, the safe-side member's collateral damage
 By~\eqref{eq:cd}, $\mathrm{CD}$ is non-decreasing in $d$ and non-increasing in $\tau$; $\eta$ is unchanged because $f$ is. Each shield rule is a per-coordinate $\min$ or $\max$ triggered by $(\mathbf{o}_t,f)$ only, so it preserves $\tilde d\le d$ and $\tilde\tau\ge\tau$. As $\rho_t$ does not depend on the action, $\mathrm{SQ}$ keeps the same order.
 \end{proof}
 
-Hence, whenever the sampled actions cause outages that a gentler filter would avoid, the safe-side member supplies the cost variance that Prop.~\ref{prop:cancel} shows to be necessary. The policy learns from it only through $-c\,[\hat A]^+\log\pi_\theta(\tilde a\,|\,\mathbf{o})$, that is, only when the member outperformed its group. The guarantee holds at every intensity, so WASAT never needs to locate the threshold. Three further components complete the method:
+Hence, whenever the sampled actions cause outages that a gentler filter would avoid, the safe-side member supplies the cost variance that Prop.~\ref{prop:cancel} shows to be necessary. The policy learns from it only through $-c\,[\hat A]^+\log\pi_\theta(\tilde a\,|\,\mathbf{o})$, that is, only when the member outperformed its group. The guarantee holds at every intensity, so MESOTES never needs to locate the threshold. Three further components complete the method:
 \begin{itemize}
 \item $\lambda$ follows dual ascent on the validation outage rate, $\lambda\leftarrow[\lambda+\eta_\lambda(\hat\sigma-\kappa)]^+$.
 \item The deployed checkpoint is selected feasibility first.
 \item Training contexts come from 360 discrete attack levels, prioritised by the MaxMC regret estimate~\cite{jiang2021robustplr,jiang2021plr} rather than by a learned attacker.
 \end{itemize}
-All GRPO variants share the remaining machinery: archive elites, shield probes, a KL anchor to the best validated checkpoint, and Sentinel's two-layer network trained without a critic. Algorithm~\ref{alg:wasat} summarises one training iteration.
+All GRPO variants share the remaining machinery: archive elites, shield probes, a KL anchor to the best validated checkpoint, and Sentinel's two-layer network trained without a critic. Algorithm~\ref{alg:mesotes} summarises one training iteration.
 
 \begin{algorithm}[t]
-\caption{One WASAT training iteration}
-\label{alg:wasat}
+\caption{One MESOTES training iteration}
+\label{alg:mesotes}
 \small
 \begin{algorithmic}[1]
 \STATE Sample $B$ levels by MaxMC priority; warm up; fork each into $G$ members sharing one traffic realisation
@@ -144,18 +144,18 @@ All GRPO variants share the remaining machinery: archive elites, shield probes, 
 % ===========================================================================
 We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in batched form. Unit tests show agreement with the reference code to within $10^{-5}$, and Sentinel's released checkpoints reproduce its published strong-attack results (0.519/0.815/78.2 against 0.519/0.815/75.0 for quality, leakage and severe outages).
 
-\textbf{Protocols.} We compare Sentinel's ten released checkpoints (seeds 42--51) with defenders trained on the same seeds. Protocol~B covers eight attack scenarios, four of them held-out stress tests, with 20 episodes of 100 windows each. Protocol~A replays the attacker that Sentinel trained for each seed, which is a transfer test for WASAT. Protocol~C is a cross-entropy red team that searches the whole scenario space, ICMP included. All comparisons are paired by seed and traffic. We use paired $t$-tests with Holm correction and Wilcoxon tests.
+\textbf{Protocols.} We compare Sentinel's ten released checkpoints (seeds 42--51) with defenders trained on the same seeds. Protocol~B covers eight attack scenarios, four of them held-out stress tests, with 20 episodes of 100 windows each. Protocol~A replays the attacker that Sentinel trained for each seed, which is a transfer test for MESOTES. Protocol~C is a cross-entropy red team that searches the whole scenario space, ICMP included. All comparisons are paired by seed and traffic. We use paired $t$-tests with Holm correction and Wilcoxon tests.
 
 \input{tab_main.tex}
 
-\textbf{Against Sentinel.} WASAT scores significantly higher than Sentinel in every attack scenario (Table~\ref{tab:main}). The scenario average is $-0.246$ against $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), with service quality unchanged. Against Sentinel's own attackers (Protocol~A), WASAT also scores higher ($-0.265$ against $-0.332$, $p=0.019$) and lets less attack traffic through (0.778 against 0.830, $p=0.018$); its severe outages drop from 25.1 to 6.3 per 500 windows, although this difference is not significant over ten seeds. In five of the eight Protocol~B scenarios (strong, chaos, pulsing, polymorphic and ICMP-chaos), WASAT is at least as good as Sentinel on quality, leakage and outages simultaneously. The remaining three are trade-offs rather than losses: on mild and boundary-rate floods WASAT gives up about 0.01 of quality for 4--7 points less leakage. Its red-team worst case improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$), while its variance across seeds shrinks from $\pm0.17$ to $\pm0.03$.
+\textbf{Against Sentinel.} MESOTES scores significantly higher than Sentinel in every attack scenario (Table~\ref{tab:main}). The scenario average is $-0.246$ against $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), with service quality unchanged. Against Sentinel's own attackers (Protocol~A), MESOTES also scores higher ($-0.265$ against $-0.332$, $p=0.019$) and lets less attack traffic through (0.778 against 0.830, $p=0.018$); its severe outages drop from 25.1 to 6.3 per 500 windows, although this difference is not significant over ten seeds. In five of the eight Protocol~B scenarios (strong, chaos, pulsing, polymorphic and ICMP-chaos), MESOTES is at least as good as Sentinel on quality, leakage and outages simultaneously. The remaining three are trade-offs rather than losses: on mild and boundary-rate floods MESOTES gives up about 0.01 of quality for 4--7 points less leakage. Its red-team worst case improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$), while its variance across seeds shrinks from $\pm0.17$ to $\pm0.03$.
 
-\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. WASAT still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Fig.~\ref{fig:tradeoff} isolate the safe-side member:
+\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. MESOTES still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Fig.~\ref{fig:tradeoff} isolate the safe-side member:
 \begin{itemize}
 \item A Lagrangian budget alone is met in one seed out of ten even though $\lambda$ rises to about 7.7, as Prop.~\ref{prop:cancel} predicts (Fig.~\ref{fig:dyn}).
 \item An entropy bonus or an uncentred cost does not restore feasibility.
 \item Constrained GRPO meets the budget in three seeds.
-\item WASAT meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
+\item MESOTES meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
 \end{itemize}
 
 \input{tab_ablation.tex}
@@ -163,21 +163,21 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/dynamics.pdf}
-\caption{Training dynamics (mean and 95\% confidence band over ten seeds). (a) Validation outage rate. (b) Lagrange multiplier. Without a safe-side member, raising $\lambda$ cannot pull the outage rate below the budget; WASAT meets it with $\lambda\approx0.4$.}
+\caption{Training dynamics (mean and 95\% confidence band over ten seeds). (a) Validation outage rate. (b) Lagrange multiplier. Without a safe-side member, raising $\lambda$ cannot pull the outage rate below the budget; MESOTES meets it with $\lambda\approx0.4$.}
 \label{fig:dyn}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/tradeoff.pdf}
-\caption{Severe outages against attack leakage (Protocol~B, eight scenarios, 95\% confidence intervals over ten seeds). Only WASAT reduces both relative to Sentinel.}
+\caption{Severe outages against attack leakage (Protocol~B, eight scenarios, 95\% confidence intervals over ten seeds). Only MESOTES reduces both relative to Sentinel.}
 \label{fig:tradeoff}
 \end{figure}
 
 \textbf{Deployment and limitations.} The deployed actor has 5{,}447 parameters (21.8\,kB). On one 2.1\,GHz core, a decision including shielding takes 0.24\,ms, far below sub-second control windows. The study has four limitations:
 \begin{itemize}
-\item On zero-shot ICMP floods, WASAT incurs more severe outages than Sentinel (18.0 against 4.6, not significant). A simulated operator who reviews the link every ten windows and applies Sentinel's ICMP constants removes this gap: 2.1 severe windows at 90\% recognition accuracy and 4.3 at 70\%, with no change in the composite score.
-\item WASAT does not surpass Constrained GRPO on the composite score.
+\item On zero-shot ICMP floods, MESOTES incurs more severe outages than Sentinel (18.0 against 4.6, not significant). A simulated operator who reviews the link every ten windows and applies Sentinel's ICMP constants removes this gap: 2.1 severe windows at 90\% recognition accuracy and 4.3 at 70\%, with no change in the composite score.
+\item MESOTES does not surpass Constrained GRPO on the composite score.
 \item Prop.~\ref{prop:safe} assumes that congestion is evaluated on the offered load.
 \item All results come from simulation.
 \end{itemize}
@@ -185,9 +185,9 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 % ===========================================================================
 \section{Discussion}
 % ===========================================================================
-\textbf{Why a single member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck. Without a safe-side member, $\lambda$ grows steadily, yet the outage rate barely moves, because most groups contain no member that avoids the outage. One member that is guaranteed to be no less safe is enough to give the constraint a direction, so WASAT meets the budget from the first hundred iterations while $\lambda$ stays almost constant. Because the safe-side member is derived from the policy's own sample, it adds no external teacher and no extra hyperparameter beyond the range of $u$. It also replaces one of the eight group members rather than adding a rollout, so the cost of a training iteration is unchanged.
+\textbf{Why a single member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck. Without a safe-side member, $\lambda$ grows steadily, yet the outage rate barely moves, because most groups contain no member that avoids the outage. One member that is guaranteed to be no less safe is enough to give the constraint a direction, so MESOTES meets the budget from the first hundred iterations while $\lambda$ stays almost constant. Derived from the policy's own sample, it needs no external teacher and no hyperparameter beyond the range of $u$, and it replaces one of the eight members rather than adding a rollout, so an iteration costs no more.
 
-\textbf{Interpretability.} WASAT keeps Sentinel's operator-facing rule extraction. Across the ten seeds, the depth-4 decision trees distilled from the final policies reproduce its filtering focus with 99.8\% held-out accuracy, and its threshold and drop rate with mean absolute errors of 0.013 and 0.017. They use about 32 leaves in total. Deployed behind the same shield, these rule programs reach the same validation score as the neural policy (0.089), so an operator can audit or replace the network without loss. The certified shield tuning is equally readable. On average it lowered the PanicGuard utilisation gate from 0.60 to 0.52, while keeping the drop cap and the threshold floor close to Sentinel's values (0.11 and 0.39 against 0.10 and 0.40). Low-rate floods can therefore be filtered slightly earlier without any change to behaviour on benign traffic.
+\textbf{Interpretability.} MESOTES keeps Sentinel's operator-facing rule extraction. Across the ten seeds, the depth-4 decision trees distilled from the final policies reproduce its filtering focus with 99.8\% held-out accuracy, and its threshold and drop rate with mean absolute errors of 0.013 and 0.017. They use about 32 leaves in total. Deployed behind the same shield, these rule programs reach the same validation score as the neural policy (0.089), so an operator can audit or replace the network without loss. The certified shield tuning is equally readable. On average it lowered the PanicGuard utilisation gate from 0.60 to 0.52, while keeping the drop cap and the threshold floor close to Sentinel's values (0.11 and 0.39 against 0.10 and 0.40). Low-rate floods can therefore be filtered slightly earlier without any change to behaviour on benign traffic.
 
 \textbf{Scope of the guarantee.} Prop.~\ref{prop:safe} needs two structural facts: collateral damage must be monotone in the drop rate and the threshold, and the shield must act through coordinate-wise clamps. Both hold for rate-limiting filters in general, but the second part of the proof also uses the fact that congestion depends on the offered load. If filtering instead took place upstream of the bottleneck, weaker filtering could itself overload the link, and the safe direction would have to be derived from the joint effect on congestion. Extending the construction to that case, and to trace-driven 5G and 6G traffic, is our next step.
 
