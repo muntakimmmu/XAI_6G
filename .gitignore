@@ -15,3 +15,8 @@ paper/icc/*.log
 paper/icc/*.out
 paper/icc/*.bbl
 paper/icc/*.blg
+paper/nl/*.aux
+paper/nl/*.log
+paper/nl/*.out
+paper/nl/*.bbl
+paper/nl/*.blg

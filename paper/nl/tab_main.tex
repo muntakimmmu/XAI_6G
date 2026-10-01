@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Protocol B over 10 Seeds: Composite Score ($\uparrow$) and Severe Outages per 500 Windows ($\downarrow$)}
+\label{tab:main}
+\setlength{\tabcolsep}{2.4pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Composite score} & \multicolumn{3}{c}{Severe outages} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Scenario & Sentinel & C-GRPO & SPAN6G & Sentinel & C-GRPO & SPAN6G \\
+\midrule
+Mild & 0.009 & \textbf{0.053} & 0.040\textsuperscript{\dag} & \textbf{0.0} & \textbf{0.0} & \textbf{0.0} \\
+Strong & -0.746 & -0.612 & \textbf{-0.583}\textsuperscript{\dag} & 155.2 & 85.9 & \textbf{38.9} \\
+Chaos/flash & -0.169 & \textbf{-0.114} & -0.123\textsuperscript{\dag} & 14.1 & 16.8 & \textbf{10.7} \\
+ICMP (zero-shot) & -0.474 & -0.474 & \textbf{-0.458}\textsuperscript{\dag} & \textbf{4.6} & 23.3 & 18.0 \\
+Pulsing$^\ast$ & -0.303 & -0.228 & \textbf{-0.225}\textsuperscript{\dag} & 60.5 & 37.7 & \textbf{16.1} \\
+Polymorphic$^\ast$ & -0.454 & -0.442 & \textbf{-0.430}\textsuperscript{\dag} & 14.9 & 24.0 & \textbf{14.2} \\
+Boundary$^\ast$ & 0.003 & \textbf{0.084} & 0.071\textsuperscript{\dag} & \textbf{0.0} & \textbf{0.0} & \textbf{0.0} \\
+ICMP-chaos$^\ast$ & -0.299 & \textbf{-0.255} & -0.257\textsuperscript{\dag} & 25.4 & 25.2 & \textbf{20.9} \\
+\midrule
+Average & -0.304 & -0.248 & -0.246 & 34.4 & 26.6 & 14.8 \\
+\bottomrule
+\end{tabular}}
+
+\vspace{2pt}
+\parbox{\columnwidth}{\scriptsize $^\ast$Held-out stress test. \dag\,SPAN6G above Sentinel, paired $t$-test, Holm-corrected, $p<0.05$. Bold: best.}
+\end{table}

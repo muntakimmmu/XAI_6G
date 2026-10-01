@@ -1,0 +1,26 @@
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize, >={Stealth[length=1.5mm]},
+  box/.style={draw, rounded corners=1.5pt, align=center, inner sep=2pt, minimum height=7mm, fill=white},
+  ag/.style={box, fill=blue!7, draw=blue!60!black}, sy/.style={box, fill=orange!10, draw=orange!70!black},
+  tr/.style={box, fill=gray!8, draw=gray!70}]
+\node[box, minimum width=10mm] (ue) at (0, 0.42) {6G UEs};
+\node[box, minimum width=10mm] (bot) at (0,-0.42) {Botnet};
+\node[box, minimum width=11mm] (gnb) at (1.4, 0) {gNB/UPF};
+\node[sy, minimum width=17mm] (scr) at (3.85, 0) {Edge scrubber\\$(\tau,f,d)$};
+\node[box, minimum width=10mm] (mec) at (6.35, 0) {MEC\\service};
+\node[ag, minimum width=19mm] (pol) at (5.55, 1.6) {SPAN6G policy\\$\pi_\theta(a\,|\,\mathbf{o})$};
+\node[sy, minimum width=15mm] (sh) at (2.2, 1.6) {Symbolic\\shield $\mathcal{S}_\phi$};
+\node[tr, text width=58mm] (twin) at (2.75,-1.45) {Digital-twin training: $G$ forked rollouts per context with shared random numbers; $G{-}1$ policy members plus one \textbf{safe-side member}; outage budget $\lambda$; MaxMC levels.};
+\draw[->] (ue.east) -- (gnb.west);
+\draw[->] (bot.east) -- (gnb.west);
+\draw[->] (gnb) -- node[above]{link $C$} (scr);
+\draw[->] (scr) -- (mec);
+\draw[->] ([xshift=6mm]scr.north) |- node[pos=0.3, right]{$\mathbf{o}_t$} (pol.west);
+\draw[->] (pol.north) -- ++(0,0.3) -| node[pos=0.25, above]{proposed action $a_t$} (sh.north);
+\draw[->] (sh.south) |- node[pos=0.35, left]{$a^{\mathrm{safe}}_t$} ([xshift=-4mm]scr.north);
+\draw[->, dashed] (twin.east -| pol.south) ++(0,0.62) -- node[pos=0.15, right]{$\theta$} (pol.south);
+\end{tikzpicture}
+\caption{System model. At the 6G edge, a learned filtering policy configures a scrubber placed in front of the MEC service, and every proposal passes through a symbolic shield. The policy is trained in a digital twin using safety-spanning rollout groups.}
+\label{fig:system}
+\end{figure}
