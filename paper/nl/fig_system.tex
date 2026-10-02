@@ -21,6 +21,6 @@
 \draw[->] (sh.south) |- node[pos=0.35, left]{$a^{\mathrm{safe}}_t$} ([xshift=-4mm]scr.north);
 \draw[->, dashed] (twin.east -| pol.south) ++(0,0.62) -- node[pos=0.15, right]{$\theta$} (pol.south);
 \end{tikzpicture}
-\caption{System model. At the 6G edge, a learned filtering policy configures a scrubber placed in front of the MEC service, and every proposal passes through a symbolic shield. The policy is trained in a digital twin using safety-spanning rollout groups.}
+\caption{System model: shielded learned filtering in front of an edge service, trained in a digital twin.}
 \label{fig:system}
 \end{figure}

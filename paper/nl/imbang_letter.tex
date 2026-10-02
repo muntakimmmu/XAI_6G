@@ -15,8 +15,10 @@
 
 \title{IMBANG: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation}
 
-\author{Author~One, Author~Two, and Author~Three%
-\thanks{The authors are with Affiliation, City, Country (e-mail: author1@institution.edu; author2@institution.edu; author3@institution.edu).}}
+\author{Muntakimur~Rahaman, Azwan~Mahmud, Abdellah~Chehri, and~Bijan~Raahemi%
+\thanks{M. Rahaman and A. Mahmud are with the Faculty of Artificial Intelligence and Engineering, Multimedia University, Cyberjaya 63100, Selangor, Malaysia (e-mail: muntakimur.rahaman@student.mmu.edu.my; azwan.mahmud@mmu.edu.my).}%
+\thanks{A. Chehri is with the Department of Mathematics and Computer Science, Royal Military College of Canada, Kingston, ON K7K 7B4, Canada (e-mail: abdellah.chehri@rmc-cmr.ca).}%
+\thanks{B. Raahemi is with the Telfer School of Management and the Digital Transformation and Innovation Program, University of Ottawa, Ottawa, ON K1N 6N5, Canada (e-mail: braahemi@uottawa.ca).}}
 
 \markboth{IEEE Networking Letters}{IMBANG: Balancing DDoS Mitigation and Service Outages}
 
@@ -33,7 +35,7 @@ DDoS mitigation, 6G security, safe reinforcement learning, group-relative policy
 % ===========================================================================
 \section{Introduction}
 % ===========================================================================
-\IEEEPARstart{Z}{ero-touch} 6G management expects edge controllers to absorb volumetric DDoS floods in closed loop~\cite{benzaid2020zsm,liyanage2023oran}. Such a controller must discard hostile traffic without starving legitimate users: a filter that is too aggressive causes the outage it was meant to prevent~\cite{guo2020xai6g}. Deep reinforcement learning has been applied to throttling, SDN flow control and per-host drop policies~\cite{malialis2015distributed,liu2018drlddos,simpson2020perhost}. Sentinel~\cite{alfatemi2026sentinel} is the most complete recent design. It trains its agent with Proximal Policy Optimization (PPO)~\cite{schulman2017ppo} against a co-evolving attacker and inserts a symbolic shield~\cite{alshiekh2018shielding} between the agent and the network. Its authors report that training deteriorates late in every seed and that severe outages persist under heavy floods.
+\IEEEPARstart{Z}{ero-touch} 6G management expects edge controllers to absorb volumetric DDoS floods in closed loop~\cite{benzaid2020zsm,liyanage2023oran}. Such a controller must discard hostile traffic without starving legitimate users: a filter that is too aggressive causes the outage it was meant to prevent~\cite{guo2020xai6g}. Deep reinforcement learning has been applied to throttling, SDN flow control and per-host drop policies~\cite{malialis2015distributed,liu2018drlddos,simpson2020perhost}. Sentinel~\cite{alfatemi2026sentinel} is the most advanced recent design. It trains its agent with Proximal Policy Optimization (PPO)~\cite{schulman2017ppo} against a co-evolving attacker and inserts a symbolic shield~\cite{alshiekh2018shielding} between the agent and the network. Its authors report that training deteriorates late in every seed and that severe outages persist under heavy floods.
 
 Group Relative Policy Optimization (GRPO)~\cite{shao2024deepseekmath} looks like a natural successor. It compares several rollouts started from one state, so neither a value network nor a learned opponent is needed. In a simulator these rollouts can share one realisation of the traffic process~\cite{ng2000pegasus}, so that they differ only in the defender's actions. We find, however, that GRPO defenders leak less attack traffic than Sentinel but cause \emph{more} severe outages. The reason is structural. A cost that every member of a group incurs is removed by the group mean, mirroring the gradient starvation of binary-reward GRPO~\cite{nie2026starvation,yu2025dapo}. Separate normalisation of the cost channel, as in Constrained GRPO~\cite{girgis2026cgrpo}, does not help when that channel has no variance within a group. Injecting reference samples into groups stabilises language-model training~\cite{yan2025luffy,armor2026}, but no safe direction is available in that setting. Table~\ref{tab:related} summarises how these approaches treat the outage constraint.
 
@@ -53,18 +55,21 @@ PPO-Lagrangian / CPO~\cite{achiam2017cpo} & -- & \checkmark & \checkmark & n/a (
 GRPO~\cite{shao2024deepseekmath} with penalty & \checkmark & \checkmark & \checkmark & -- \\
 Constrained GRPO~\cite{girgis2026cgrpo} & \checkmark & \checkmark & \checkmark & -- \\
 Sign advantage~\cite{nie2026starvation} & \checkmark & \checkmark & -- & fixed reference \\
-\textbf{IMBANG (ours)} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
+\textbf{IMBANG} & \checkmark & \checkmark & \checkmark & \checkmark\ (safe member) \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-This letter makes three contributions. First, it formalises this \emph{constraint-cancellation} effect and confirms it on 80 trained checkpoints. Second, it proposes IMBANG (\textbf{I}nterpretable, \textbf{M}onotone-safe, \textbf{B}udgeted, \textbf{A}dversary-free, \textbf{N}euro-symbolic \textbf{G}RPO; also Malay for \emph{balance}), whose \emph{safe-side member} keeps every group straddling the outage boundary, with a monotonicity guarantee. Third, it compares IMBANG with Sentinel's released checkpoints, a compute-matched PPO baseline, Constrained GRPO and the simplest alternative remedies over ten seeds.
+This letter makes three key contributions. First, it derives this \emph{constraint-cancellation} effect and validates it on 80 trained checkpoints (Section~\ref{sec:mechanism}). Second, it proposes IMBANG (\textbf{I}nterpretable, \textbf{M}onotone-safe, \textbf{B}udgeted, \textbf{A}dversary-free, \textbf{N}euro-symbolic \textbf{G}RPO), whose \emph{safe-side member} keeps every group straddling the outage boundary with a proven monotonicity guarantee (Section~\ref{sec:method}). Third, it benchmarks IMBANG against Sentinel's released checkpoints, a compute-matched PPO baseline, Constrained GRPO and the simplest alternative remedies over ten seeds (Section~\ref{sec:eval}).
 
 % ===========================================================================
 \section{System Model}
+\label{sec:system}
 % ===========================================================================
 \input{fig_system.tex}
-We use the setting of~\cite{alfatemi2026sentinel}, illustrated in Fig.~\ref{fig:system}. An edge link of capacity $C$ carries benign traffic $L_t\sim\mathrm{Poisson}(\mu)$ and attack traffic $A_t=1.5\,C\,i_t$. The attack belongs to a family in $\{\mathrm{SYN},\mathrm{UDP},\mathrm{HTTP},\mathrm{ICMP},\mathrm{mixed}\}$, with intensity $i_t\in[0,1]$ and a mutation level $m_t$ that weakens filter matching; flash crowds may inflate $L_t$ up to fourfold. ICMP is withheld from training. In each control window the defender observes twelve aggregate indicators $\mathbf{o}_t\in[0,1]^{12}$, measured on served traffic. It then sets a load threshold $\tau_t$, a filtering focus $f_t\in\{\mathrm{SrcIP},\mathrm{Proto},\mathrm{Size}\}$ and a drop probability $d_t$. With match effectiveness $\eta=\eta_{kf}(1-m_t/2)$, the share of benign traffic lost to filtering is
+We use the system model of~\cite{alfatemi2026sentinel}, shown in Fig.~\ref{fig:system}. User equipment and a botnet share a gNB/UPF link that feeds an edge scrubber placed in front of a multi-access edge computing (MEC) service. In each control window the learned policy proposes a filtering action from aggregate telemetry, the symbolic shield repairs any unsafe proposal, and the scrubber applies the result. The policy is trained offline in a digital twin of this loop (Section~\ref{sec:method}).
+
+The edge link has capacity $C$ and carries benign traffic $L_t\sim\mathrm{Poisson}(\mu)$ and attack traffic $A_t=1.5\,C\,i_t$. The attack belongs to a family in $\{\mathrm{SYN},\mathrm{UDP},\mathrm{HTTP},\mathrm{ICMP},\mathrm{mixed}\}$, with intensity $i_t\in[0,1]$ and a mutation level $m_t$ that weakens filter matching; flash crowds may inflate $L_t$ up to fourfold. ICMP is withheld from training. In each control window the defender observes twelve aggregate indicators $\mathbf{o}_t\in[0,1]^{12}$, measured on served traffic. It then sets a load threshold $\tau_t$, a filtering focus $f_t\in\{\mathrm{SrcIP},\mathrm{Proto},\mathrm{Size}\}$ and a drop probability $d_t$. With match effectiveness $\eta=\eta_{kf}(1-m_t/2)$, the share of benign traffic lost to filtering is
 \begin{equation}
 \mathrm{CD}_t = 0.4\,d_t(1-\eta)\,\alpha(\tau_t) + 0.2\,[L_t-C\tau_t]^+/L_t ,
 \label{eq:cd}
@@ -76,7 +81,7 @@ where $\mathrm{leak}_t$ is the share of attack traffic delivered. A symbolic shi
 \max_\theta\ \mathbb{E}_{\pi_\theta}\Big[\textstyle\sum_t b_t\Big]\quad\text{s.t.}\quad \sigma(\pi_\theta)\le\kappa=0.05 ,
 \label{eq:cpomdp}
 \end{equation}
-where $\sigma$ is the severe-outage frequency on the operator's validation scenarios. The budget $\kappa$ was fixed before the ten-seed experiments.
+where $\sigma$ is the severe-outage frequency on the operator's validation scenarios. The budget $\kappa$ was fixed before the ten-seed experiments. The traffic, observation and service models, \eqref{eq:cd}, the score $b_t$ and the shield are taken unchanged from~\cite{alfatemi2026sentinel}. Our new elements are the budgeted formulation~\eqref{eq:cpomdp}, the cancellation result (Proposition~\ref{prop:cancel}) and the safe-side construction with its guarantee (Proposition~\ref{prop:safe}).
 
 % ===========================================================================
 \section{Constraint Cancellation}
@@ -139,7 +144,7 @@ All GRPO variants share the remaining machinery: archive elites, shield probes, 
 \textbf{Implementation.} Each run performs 500 iterations with $B=32$ contexts, $G=8$ members, horizon $H=8$, up to 40 warm-up windows and a discovery step every $K=20$ iterations. Optimisation uses Adam with learning rate $3\times10^{-4}$, clipping 0.2, four epochs, a KL weight of 0.02, an elite weight of 0.5 and an entropy weight of 0.005. The multiplier step is $\eta_\lambda=4$ per validation round, and the validation battery contains benign, mild, strong and chaos traffic but no ICMP, so that ICMP remains unseen until testing.
 
 % ===========================================================================
-\section{Evaluation}
+\section{Results and Discussion}
 \label{sec:eval}
 % ===========================================================================
 We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in batched form. Unit tests show agreement with the reference code to within $10^{-5}$, and Sentinel's released checkpoints reproduce its published strong-attack results (0.519/0.815/78.2 against 0.519/0.815/75.0 for quality, leakage and severe outages).
@@ -148,15 +153,18 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 
 \input{tab_main.tex}
 
-\textbf{Against Sentinel.} IMBANG scores significantly higher than Sentinel in every attack scenario (Table~\ref{tab:main}). The scenario average is $-0.246$ against $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), with service quality unchanged. Against Sentinel's own attackers (Protocol~A), IMBANG also scores higher ($-0.265$ against $-0.332$, $p=0.019$) and lets less attack traffic through (0.778 against 0.830, $p=0.018$); its severe outages drop from 25.1 to 6.3 per 500 windows, although this difference is not significant over ten seeds. In five of the eight Protocol~B scenarios (strong, chaos, pulsing, polymorphic and ICMP-chaos), IMBANG is at least as good as Sentinel on quality, leakage and outages simultaneously. The remaining three are trade-offs rather than losses: on mild and boundary-rate floods IMBANG gives up about 0.01 of quality for 4--7 points less leakage. Its red-team worst case improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$), while its variance across seeds shrinks from $\pm0.17$ to $\pm0.03$.
+\textbf{Against Sentinel.} IMBANG scores significantly higher than Sentinel in every attack scenario (Table~\ref{tab:main}); the scenario average is $-0.246$ against $-0.304$ ($p=1.2\times10^{-5}$). Severe outages fall from 34.4 to 14.8 per 500 windows ($p=0.002$) and leakage from 0.876 to 0.839 ($p<10^{-3}$), with service quality unchanged. Against Sentinel's own attackers (Protocol~A), IMBANG also scores higher ($-0.265$ against $-0.332$, $p=0.019$) and leaks less (0.778 against 0.830, $p=0.018$). In five of the eight scenarios it is at least as good as Sentinel on quality, leakage and outages simultaneously; on mild and boundary-rate floods it trades about 0.01 of quality for 4--7 points less leakage. Its red-team worst case improves from $-1.07$ to $-0.72$ ($p=7.2\times10^{-4}$).
 
-\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. IMBANG still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Fig.~\ref{fig:tradeoff} isolate the safe-side member:
-\begin{itemize}
-\item A Lagrangian budget alone is met in one seed out of ten even though $\lambda$ rises to about 7.7, as Prop.~\ref{prop:cancel} predicts (Fig.~\ref{fig:dyn}).
-\item An entropy bonus or an uncentred cost does not restore feasibility.
-\item Constrained GRPO meets the budget in three seeds.
-\item IMBANG meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
-\end{itemize}
+\textbf{Operating curve.} Fig.~\ref{fig:intensity} sweeps the flood intensity $i$ with identical traffic for all defenders. Up to $i=0.9$, Sentinel and IMBANG keep severe outages at or below 1.1 per 500 windows, Sentinel marginally lower. As the link saturates, Sentinel's outages climb to 143 per 500 windows at $i=1$, against 84 for Constrained GRPO and 40 for IMBANG, so IMBANG delays and flattens the outage cliff. IMBANG also leaks less than Sentinel at every intensity.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/intensity.pdf}
+\caption{Operating curve over attack intensity (training attack mix, 20 episodes per point, mean and 95\% confidence band over ten seeds). (a) Severe outages near link saturation. (b) Attack leakage.}
+\label{fig:intensity}
+\end{figure}
+
+\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. IMBANG still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Fig.~\ref{fig:tradeoff} isolate the safe-side member. A Lagrangian budget alone is met in one seed out of ten even though $\lambda$ rises to about 7.7, as Prop.~\ref{prop:cancel} predicts (Fig.~\ref{fig:dyn}); an entropy bonus or an uncentred cost does not restore feasibility, and Constrained GRPO meets the budget in three seeds. IMBANG meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
 
 \input{tab_ablation.tex}
 
@@ -176,25 +184,20 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 
 \textbf{Deployment and limitations.} The deployed actor has 5{,}447 parameters (21.8\,kB). On one 2.1\,GHz core, a decision including shielding takes 0.24\,ms, far below sub-second control windows. The study has four limitations:
 \begin{itemize}
-\item On zero-shot ICMP floods, IMBANG incurs more severe outages than Sentinel (18.0 against 4.6, not significant). A simulated operator who reviews the link every ten windows and applies Sentinel's ICMP constants removes this gap: 2.1 severe windows at 90\% recognition accuracy and 4.3 at 70\%, with no change in the composite score.
+\item On zero-shot ICMP floods, IMBANG incurs more severe outages than Sentinel (18.0 against 4.6, not significant); an operator applying Sentinel's ICMP constants every ten windows reduces this to 2.1 at 90\% recognition accuracy.
 \item IMBANG does not surpass Constrained GRPO on the composite score; its advantage lies in meeting the outage budget reliably and in fewer outages.
-\item Prop.~\ref{prop:safe} assumes that congestion is evaluated on the offered load.
+\item Prop.~\ref{prop:safe} assumes congestion set by the offered load; filtering upstream of the bottleneck would need a congestion-aware safe direction.
 \item All results come from simulation.
 \end{itemize}
 
-% ===========================================================================
-\section{Discussion}
-% ===========================================================================
-\textbf{Why a single member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck. Without a safe-side member, $\lambda$ grows steadily, yet the outage rate barely moves, because most groups contain no member that avoids the outage. One member that is guaranteed to be no less safe is enough to give the constraint a direction, so IMBANG meets the budget from the first hundred iterations while $\lambda$ stays almost constant. Derived from the policy's own sample, it needs no external teacher and no hyperparameter beyond the range of $u$, and it replaces one of the eight members rather than adding a rollout, so a training iteration costs no more than before.
+\textbf{Why one member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck: without a safe-side member, $\lambda$ grows steadily while the outage rate barely moves, because most groups contain no member that avoids the outage. One guaranteed no-less-safe member gives the constraint a direction, so IMBANG meets the budget early with $\lambda$ almost constant. It replaces one of the eight members, so an iteration costs no more.
 
-\textbf{Interpretability.} IMBANG keeps Sentinel's operator-facing rule extraction. Across the ten seeds, the depth-4 decision trees distilled from the final policies reproduce its filtering focus with 99.8\% held-out accuracy, and its threshold and drop rate with mean absolute errors of 0.013 and 0.017. They use about 32 leaves in total. Deployed behind the same shield, these rule programs reach the same validation score as the neural policy (0.089), so an operator can audit or replace the network without loss. The certified shield tuning is equally readable. On average it lowered the PanicGuard utilisation gate from 0.60 to 0.52, while keeping the drop cap and the threshold floor close to Sentinel's values (0.11 and 0.39 against 0.10 and 0.40). Low-rate floods can therefore be filtered slightly earlier without any change to behaviour on benign traffic.
-
-\textbf{Scope of the guarantee.} Prop.~\ref{prop:safe} needs two structural facts: collateral damage must be monotone in the drop rate and the threshold, and the shield must act through coordinate-wise clamps. Both hold for rate-limiting filters in general, but the second part of the proof also uses the fact that congestion depends on the offered load. If filtering instead took place upstream of the bottleneck, weaker filtering could itself overload the link, and the safe direction would have to be derived from the joint effect on congestion. Extending the construction to that case, and to trace-driven 5G and 6G traffic, is our next step.
+\textbf{Interpretability.} Depth-4 decision trees distilled from the final policies reproduce the filtering focus with 99.8\% held-out accuracy and the threshold and drop rate with mean absolute errors of 0.013 and 0.017. Behind the same shield they match the neural policy's validation score, so operators can audit or replace the network. The certified shield tuning is equally readable: it lowered the PanicGuard utilisation gate from 0.60 to 0.52 on average.
 
 % ===========================================================================
 \section{Conclusion}
 % ===========================================================================
-Critic-free group-relative training removes the value network and the adversarial loop from DDoS defence, but it erases any safety cost that a whole group shares. A single safe-side member per group, guaranteed by monotonicity, restores that cost. The resulting defender outperforms the co-evolutionary Sentinel and more than halves its severe outages. Validation on replayed real traffic, such as captures from live 5G testbeds, is left for future work.
+Group-relative training erases any safety cost that a whole group shares. IMBANG restores it with one guaranteed safe-side member per group, outperforming Sentinel and more than halving its severe outages; validation on real 5G traffic is future work.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}

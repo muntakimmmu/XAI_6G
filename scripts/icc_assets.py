@@ -46,7 +46,7 @@ def fig_mechanism():
               ("ppo", "PPO", GRAY, "s"), ("Sentinel", "Sentinel", ORANGE, "D"),
               ("span_nosafe", "budget only", GRAY, "<"), ("span_cgrpo", "Constrained GRPO", AQUA, "^"),
               ("span_cgrpo_safe", "IMBANG + C-GRPO", BLUE, "s"), ("span", "IMBANG", BLUE, "o")]
-    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.85))
+    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.7))
     for m, lab, c, mk in groups:
         g = d[d.method == m]
         kw = dict(color=c, marker=mk, s=12 if mk != "x" else 14, lw=0.8 if mk == "x" else 0.4,

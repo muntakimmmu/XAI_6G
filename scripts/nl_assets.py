@@ -154,5 +154,35 @@ def fig_dynamics():
     plt.close(fig)
 
 
+def fig_intensity():
+    """Severe outages near the overload cliff and leakage over the full intensity range (10 seeds)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    sys.path.insert(0, "scripts")
+    from icc_assets import AQUA, BLUE, ORANGE, style
+    style()
+    df = pd.read_csv("results/intensity_sweep_by_seed.csv")
+    series = [("Sentinel", "Sentinel", ORANGE, "D"), ("span_cgrpo", "C-GRPO", AQUA, "^"), ("span", "IMBANG", BLUE, "o")]
+    fig, ax = plt.subplots(1, 2, figsize=(3.5, 1.45))
+    for m, lab, c, mk in series:
+        for col, a, lo in (("severe", ax[0], 0.85), ("leakage", ax[1], 0.0)):
+            g = df[(df.defender == m) & (df.intensity >= lo)].groupby("intensity")[col]
+            mu, se = g.mean(), g.std() / np.sqrt(g.count())
+            a.plot(mu.index, mu.values, color=c, lw=1.2, marker=mk, ms=2.5, label=lab)
+            a.fill_between(mu.index, mu - 1.96 * se, mu + 1.96 * se, color=c, alpha=0.15, lw=0)
+    ax[0].set_ylabel("Severe / 500 windows")
+    ax[1].set_ylabel("Attack leakage")
+    ax[0].set_xlabel("(a) Attack intensity $i$")
+    ax[1].set_xlabel("(b) Attack intensity $i$")
+    h, lab = ax[0].get_legend_handles_labels()
+    fig.tight_layout(w_pad=0.8, rect=(0, 0, 1, 0.84))
+    fig.legend(h, lab, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.0), borderaxespad=0,
+               columnspacing=1.2, handlelength=1.8)
+    fig.savefig(os.path.join(OUT, "figures", "intensity.pdf"))
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_dynamics()
+    fig_intensity()
