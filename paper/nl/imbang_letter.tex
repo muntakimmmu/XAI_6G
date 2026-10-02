@@ -164,7 +164,7 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 \label{fig:intensity}
 \end{figure}
 
-\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. IMBANG still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Fig.~\ref{fig:tradeoff} isolate the safe-side member. A Lagrangian budget alone is met in one seed out of ten even though $\lambda$ rises to about 7.7, as Prop.~\ref{prop:cancel} predicts (Fig.~\ref{fig:dyn}); an entropy bonus or an uncentred cost does not restore feasibility, and Constrained GRPO meets the budget in three seeds. IMBANG meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
+\textbf{Budget and remedies.} A PPO baseline given the same 1.34M training windows already improves on Sentinel, which shows the benefit of dropping co-evolution. IMBANG still beats it at equal budget ($+0.030$, $p=2\times10^{-7}$). Table~\ref{tab:ablation} and Figs.~\ref{fig:dyn} and~\ref{fig:tradeoff} isolate the safe-side member. A Lagrangian budget alone is met in one seed out of ten even though $\lambda$ rises to about 7.7, as Prop.~\ref{prop:cancel} predicts (Fig.~\ref{fig:dyn}); an entropy bonus or an uncentred cost does not restore feasibility, and Constrained GRPO meets the budget in three seeds. IMBANG meets it in nine with $\lambda\approx0.4$, matching Constrained GRPO's score ($p=0.47$) with fewer outages (14.8 against 26.6) and slightly more leakage (0.839 against 0.820).
 
 \input{tab_ablation.tex}
 
