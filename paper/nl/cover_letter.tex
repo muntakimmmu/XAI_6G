@@ -1,0 +1,64 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,top=1.8cm,bottom=1.8cm,left=2.2cm,right=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4.5pt}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{flushright}
+Faculty of Artificial Intelligence and Engineering\\
+Multimedia University, Cyberjaya 63100, Selangor, Malaysia\\[4pt]
+6 October 2026
+\end{flushright}
+
+The Editor-in-Chief\\
+\emph{IEEE Networking Letters}
+
+\textbf{Subject: Submission of the letter ``IMBANG: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation''}
+
+Dear Editor-in-Chief,
+
+We are pleased to submit the above manuscript for consideration as a letter in \emph{IEEE Networking Letters}. The manuscript is four pages long and is accompanied by supplementary material.
+
+\textbf{Problem.} Learned DDoS defenders at the network edge must remove attack traffic without cutting off legitimate users. Sentinel (IEEE TNSM, 2026), a recent neuro-symbolic framework, trains a shielded PPO agent against a co-evolving attacker. By its own account, its training degrades late in every run, and severe service outages persist under heavy floods.
+
+\textbf{Contribution.} We replace co-evolution with critic-free Group Relative Policy Optimization (GRPO), which needs neither a value network nor a learned opponent. We show that this change has a hidden cost. When every rollout in a group suffers the same number of outages, group centring removes the outage penalty from the update, so a GRPO-trained defender leaks less attack traffic but causes more outages. We prove this effect and confirm it on 80 trained checkpoints. We then propose IMBANG, which adds to each group one rollout that is guaranteed to be no less safe than the policy's own action, together with an outage budget.
+
+\textbf{Evidence.} Over ten seeds paired with Sentinel's released checkpoints, IMBANG:
+\begin{itemize}[nosep,leftmargin=1.4em]
+\item achieves a significantly higher composite score than Sentinel in all eight attack scenarios (Holm-corrected paired tests);
+\item reduces severe outages by 57\% (from 34.4 to 14.8 per 500 control windows);
+\item meets the operator's outage budget in nine seeds out of ten, against three for Constrained GRPO;
+\item outperforms a PPO baseline given the same training budget, and decides in under 0.3\,ms per window on one CPU core.
+\end{itemize}
+The letter also reports the method's limitations, notably on zero-shot ICMP floods, where IMBANG incurs more severe outages than Sentinel.
+
+\textbf{Relevance.} The letter addresses safe, learning-based traffic control at the 6G edge, a core topic for the journal's readership. It also identifies a failure mode of group-relative optimisation that applies to any safety constraint shared by a whole group, beyond DDoS mitigation.
+
+\textbf{Supplementary material and reproducibility.} The supplementary material contains:
+\begin{itemize}[nosep,leftmargin=1.4em]
+\item an 11-page document with the full system model, complete proofs, all settings and extended results;
+\item an archive with the code, the per-seed results and the trained checkpoints, from which every table and figure can be regenerated.
+\end{itemize}
+
+\textbf{Declarations.}
+\begin{itemize}[nosep,leftmargin=1.4em]
+\item The manuscript is original, has not been published, and is not under consideration for publication elsewhere.
+\item All authors have approved the submission.
+\item Co-author Abdellah Chehri is also a co-author of Sentinel, the baseline we compare against. Our comparison uses only Sentinel's publicly released code and checkpoints, and the manuscript states all cases in which Sentinel performs better.
+\item The authors declare no competing interests.
+\end{itemize}
+
+Thank you for considering our manuscript. We look forward to hearing from you.
+
+Yours sincerely,
+
+\textbf{Muntakimur Rahaman} (corresponding author), on behalf of all authors\\
+E-mail: \href{mailto:muntakimur.rahaman@student.mmu.edu.my}{muntakimur.rahaman@student.mmu.edu.my}
+
+\end{document}
