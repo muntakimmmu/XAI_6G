@@ -112,7 +112,8 @@ def main():
     os.makedirs(os.path.join(OUT, "figures"), exist_ok=True)
     for fig in ("mechanism.pdf", "tradeoff.pdf"):
         shutil.copy(os.path.join("paper/icc/figures", fig), os.path.join(OUT, "figures", fig))
-    shutil.copy("paper/icc/refs.bib", os.path.join(OUT, "refs.bib"))
+    if os.path.exists("paper/icc/refs.bib"):
+        shutil.copy("paper/icc/refs.bib", os.path.join(OUT, "refs.bib"))
     table_main()
     table_ablation()
     print("wrote paper/nl tables")

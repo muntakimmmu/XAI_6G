@@ -1,0 +1,36 @@
+\begin{table}[!htbp]
+\centering
+\caption{Paired Tests over Ten Seeds (Protocol~B)}
+\label{tab:s-tests}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{4}{c}{Composite score} & \multicolumn{4}{c}{Severe outages / 500} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+Scenario & $\Delta$ & Holm $p$ & Wilcoxon $p$ & $d_z$ & $\Delta$ & Holm $p$ & Wilcoxon $p$ & $d_z$ \\
+\midrule
+\multicolumn{9}{@{}l}{\emph{IMBANG vs Sentinel}} \\
+Mild & +0.031 & $1.1\times10^{-6}$ & $2.0\times10^{-3}$ & +4.65 & +0.0 & 1.00 & 1.00 & +0.00 \\
+Strong & +0.164 & $2.7\times10^{-4}$ & $2.0\times10^{-3}$ & +2.20 & -116.3 & $3.5\times10^{-3}$ & $3.9\times10^{-3}$ & -1.71 \\
+Chaos/flash & +0.046 & $1.3\times10^{-4}$ & $2.0\times10^{-3}$ & +2.55 & -3.4 & 0.09 & 0.04 & -0.94 \\
+ICMP (zero-shot) & +0.016 & 0.04 & 0.04 & +0.78 & +13.4 & 0.57 & 0.08 & +0.51 \\
+Pulsing$^\ast$ & +0.078 & $5.2\times10^{-4}$ & $2.0\times10^{-3}$ & +1.94 & -44.5 & $5.9\times10^{-3}$ & $3.9\times10^{-3}$ & -1.55 \\
+Polymorphic$^\ast$ & +0.024 & $2.1\times10^{-4}$ & $2.0\times10^{-3}$ & +2.33 & -0.6 & 1.00 & 0.98 & -0.06 \\
+Boundary$^\ast$ & +0.068 & $6.1\times10^{-5}$ & $2.0\times10^{-3}$ & +2.84 & +0.0 & 1.00 & 1.00 & +0.00 \\
+ICMP-chaos$^\ast$ & +0.042 & $5.9\times10^{-3}$ & $5.9\times10^{-3}$ & +1.27 & -4.6 & 0.12 & 0.02 & -0.86 \\
+\midrule
+\multicolumn{9}{@{}l}{\emph{IMBANG vs C-GRPO}} \\
+Mild & -0.013 & 0.28 & 0.05 & -0.78 & +0.0 & 1.00 & 1.00 & +0.00 \\
+Strong & +0.029 & 0.37 & 0.02 & +0.62 & -47.0 & 0.66 & 0.04 & -0.62 \\
+Chaos/flash & -0.009 & 0.37 & 0.05 & -0.64 & -6.0 & 0.81 & $9.8\times10^{-3}$ & -0.43 \\
+ICMP (zero-shot) & +0.016 & 0.35 & 0.11 & +0.69 & -5.3 & 1.00 & 0.65 & -0.10 \\
+Pulsing$^\ast$ & +0.003 & 1.00 & 0.70 & +0.13 & -21.6 & 0.70 & $5.9\times10^{-3}$ & -0.58 \\
+Polymorphic$^\ast$ & +0.012 & 0.32 & $3.9\times10^{-3}$ & +0.73 & -9.8 & 0.80 & 0.05 & -0.48 \\
+Boundary$^\ast$ & -0.013 & 0.37 & 0.11 & -0.63 & +0.0 & 1.00 & 1.00 & +0.00 \\
+ICMP-chaos$^\ast$ & -0.002 & 1.00 & 1.00 & -0.06 & -4.3 & 0.70 & $3.9\times10^{-3}$ & -0.57 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize $\Delta$: IMBANG minus comparator, averaged over seeds. Holm: paired $t$-test, Holm-corrected across the eight scenarios per metric. Wilcoxon: signed-rank test (two-sided, uncorrected; its smallest attainable value with ten pairs is 0.002). $d_z$: standardised paired effect size.}
+\end{table}

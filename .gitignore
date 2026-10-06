@@ -20,3 +20,9 @@ paper/nl/*.log
 paper/nl/*.out
 paper/nl/*.bbl
 paper/nl/*.blg
+dist/
+paper/nl/supp/*.aux
+paper/nl/supp/*.log
+paper/nl/supp/*.out
+paper/nl/supp/*.bbl
+paper/nl/supp/*.blg

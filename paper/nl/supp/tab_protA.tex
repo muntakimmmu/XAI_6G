@@ -1,0 +1,24 @@
+\begin{table}[!htbp]
+\centering
+\caption{Protocol~A: Sentinel's Own Trained Attackers (Ten Seeds, Five Episodes Each)}
+\label{tab:s-a}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{Composite $\uparrow$} & \multicolumn{2}{c}{Severe / 500 $\downarrow$} & \multicolumn{2}{c}{Leakage $\downarrow$} & \multicolumn{2}{c}{Quality $\uparrow$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(l){8-9}
+Scenario & Sentinel & IMBANG & Sentinel & IMBANG & Sentinel & IMBANG & Sentinel & IMBANG \\
+\midrule
+Benign & $1.000\pm0.000$ & $1.000\pm0.000$ & $0.0\pm0.0$ & $0.0\pm0.0$ & 0.000 & 0.000 & 1.000 & 1.000 \\
+Mild & $0.051\pm0.035$ & $0.141\pm0.062$ & $0.0\pm0.0$ & $0.0\pm0.0$ & 0.921 & 0.808 & 0.971 & 0.950 \\
+Strong & $-0.625\pm0.193$ & $-0.509\pm0.069$ & $78.2\pm123.0$ & $5.5\pm8.3$ & 0.815 & 0.778 & 0.519 & 0.524 \\
+Chaos/flash crowd & $-0.288\pm0.150$ & $-0.251\pm0.144$ & $22.0\pm4.3$ & $19.8\pm5.8$ & 0.836 & 0.811 & 0.701 & 0.711 \\
+Zero-shot ICMP & $-0.468\pm0.029$ & $-0.439\pm0.033$ & $0.0\pm0.0$ & $0.0\pm0.0$ & 0.747 & 0.715 & 0.529 & 0.526 \\
+\midrule
+Average (attacks) & $-0.332\pm0.062$ & $-0.265\pm0.039$ & $25.1\pm30.5$ & $6.3\pm3.1$ & 0.830 & 0.778 & 0.680 & 0.678 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize For each seed, the attacker that Sentinel co-trained with its defender drives the traffic, as in Sentinel's own evaluation script; for IMBANG this is a transfer test. Leakage is averaged over all windows. Paired $t$-tests on the attack average: composite $p=0.019$, severe $p=0.22$, leakage $p=0.018$, quality $p=0.65$.}
+\end{table}

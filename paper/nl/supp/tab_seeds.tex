@@ -1,0 +1,25 @@
+\begin{table}[!htbp]
+\centering
+\caption{IMBANG per Seed: Results, Budget, Rule Distillation and Certified Shield}
+\label{tab:s-seeds}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}ccccccccccc@{}}
+\toprule
+Seed & Composite (B) & Severe (B) & Val.\ outage rate & Budget met & Final $\lambda$ & Focus acc.\ (\%) & Threshold MAE & Drop MAE & Leaves & PanicGuard gate / cap / floor \\
+\midrule
+42 & -0.241 & 11.0 & 0.021 & yes & 0.00 & 99.8 & 0.011 & 0.022 & 33 & 0.52 / 0.07 / 0.42 \\
+43 & -0.233 & 20.1 & 0.076 & no & 0.10 & 100.0 & 0.014 & 0.016 & 29 & 0.54 / 0.08 / 0.42 \\
+44 & -0.252 & 21.5 & 0.033 & yes & 0.00 & 99.8 & 0.010 & 0.023 & 34 & 0.50 / 0.14 / 0.29 \\
+45 & -0.252 & 14.3 & 0.011 & yes & 3.63 & 99.2 & 0.007 & 0.021 & 36 & 0.50 / 0.10 / 0.41 \\
+46 & -0.241 & 12.9 & 0.049 & yes & 0.00 & 99.5 & 0.022 & 0.017 & 32 & 0.47 / 0.05 / 0.39 \\
+47 & -0.260 & 14.2 & 0.031 & yes & 0.04 & 99.8 & 0.006 & 0.007 & 31 & 0.54 / 0.20 / 0.36 \\
+48 & -0.247 & 19.9 & 0.025 & yes & 0.00 & 99.8 & 0.026 & 0.021 & 30 & 0.60 / 0.10 / 0.40 \\
+49 & -0.221 & 16.4 & 0.028 & yes & 0.46 & 99.8 & 0.010 & 0.015 & 32 & 0.51 / 0.07 / 0.41 \\
+50 & -0.262 & 10.1 & 0.007 & yes & 0.02 & 99.9 & 0.012 & 0.019 & 36 & 0.53 / 0.18 / 0.37 \\
+51 & -0.248 & 8.0 & 0.010 & yes & 0.00 & 99.9 & 0.008 & 0.010 & 30 & 0.54 / 0.10 / 0.40 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Rule distillation: depth-4 decision trees fitted to the final policy, evaluated on held-out states. PanicGuard defaults are 0.60 / 0.10 / 0.40.}
+\end{table}

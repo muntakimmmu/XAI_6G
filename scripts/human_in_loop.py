@@ -30,7 +30,7 @@ from nscsd.rollout import benchmark_score, deploy  # noqa: E402
 from nscsd.stats import ci95, paired  # noqa: E402
 
 torch.set_num_threads(1)
-SM = "/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models"
+from nscsd.paths import SENTINEL_MODELS as SM  # noqa: E402
 AUTO, ICMP, CONS = 0, 1, 2
 
 

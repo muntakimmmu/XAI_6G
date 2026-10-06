@@ -1,0 +1,362 @@
+\documentclass[10pt,journal,onecolumn]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\theequation}{S\arabic{equation}}
+\input{numbers.tex}
+
+\begin{document}
+
+\title{Supplementary Material for\\ ``IMBANG: Balancing DDoS Mitigation and Service Outages with Safety-Spanning Group-Relative Policy Optimisation''}
+
+\author{Muntakimur~Rahaman, Azwan~Mahmud, Abdellah~Chehri, and~Bijan~Raahemi}
+
+\markboth{IEEE Networking Letters -- Supplementary Material}{IMBANG: Supplementary Material}
+
+\maketitle
+
+\section{Overview}
+This document supports the letter with material that does not fit in four pages. It contains:
+\begin{itemize}
+\item the complete simulator, service model and symbolic shield that the letter adopts from Sentinel~\cite{alfatemi2026sentinel} (Sections~\ref{sec:s-sim} and~\ref{sec:s-shield});
+\item full proofs of Propositions~1 and~2, and an empirical check of Proposition~2 over whole episodes (Section~\ref{sec:s-proofs});
+\item every training and evaluation setting (Sections~\ref{sec:s-train} and~\ref{sec:s-eval});
+\item extended results: all metrics with confidence intervals, all trained methods, paired tests, the red team, per-seed results and rule distillation (Sections~\ref{sec:s-results}--\ref{sec:s-interp});
+\item the simulated operator study behind the ICMP limitation (Section~\ref{sec:s-human});
+\item instructions for the accompanying code and data archive (Section~\ref{sec:s-repro}).
+\end{itemize}
+Tables, figures and equations here are numbered S1, S2, \dots; plain numbers such as ``Table~II'' refer to the letter. All results use seeds 42--51 and are paired with Sentinel's ten released checkpoints~\cite{sentinelcode}. Every number is generated from the per-seed files in the archive by \texttt{scripts/supp\_assets.py}.
+
+The method's name, IMBANG, stands for \textbf{I}nterpretable, \textbf{M}onotone-safe, \textbf{B}udgeted, \textbf{A}dversary-free, \textbf{N}euro-symbolic \textbf{G}RPO. In the code and data files it is called \texttt{span}; Table~\ref{tab:s-names} lists all code names.
+
+\begin{table}[!htbp]
+\centering
+\caption{Method Names in the Letter and in the Code}
+\label{tab:s-names}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Name in the letter & Code name & Description \\
+\midrule
+IMBANG & \texttt{span} & safe-side member + outage budget + MaxMC curriculum \\
+C-GRPO & \texttt{span\_cgrpo} & outage budget with channel-wise cost normalisation~\cite{girgis2026cgrpo}, no safe-side member \\
+IMBANG + C-GRPO norm. & \texttt{span\_cgrpo\_safe} & IMBANG with channel-wise cost normalisation \\
+GRPO + budget & \texttt{span\_nosafe} & IMBANG without the safe-side member \\
+\;\;+ entropy bonus $\times6$ & \texttt{span\_entropy} & GRPO + budget with six times the entropy weight \\
+\;\;+ uncentred cost & \texttt{span\_abscost} & GRPO + budget with a cost advantage referenced to $\kappa$ instead of the group mean \\
+MaxMC curriculum, no budget & \texttt{maxmc\_only} & curriculum only (extra baseline) \\
+GRPO, no budget & \texttt{nscsd} & GRPO with archive curriculum, no budget \\
+Plain GRPO & \texttt{grpo\_vanilla} & GRPO without archive, elites, anchor or shield tuning (Fig.~2 only) \\
+PPO + shield & \texttt{ppo} & PPO with a critic, same shield and simulator budget \\
+Sentinel & -- & released \texttt{best\_benchmark} checkpoints of~\cite{alfatemi2026sentinel} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+% ===========================================================================
+\section{Simulator and Service Model}
+\label{sec:s-sim}
+% ===========================================================================
+The letter uses Sentinel's single-link simulator unchanged~\cite{alfatemi2026sentinel,sentinelcode}. We re-implemented it in batched form. Two tests in the archive (\texttt{tests/test\_env\_equivalence.py}) check that the port matches the reference code to within $10^{-5}$. Table~\ref{tab:s-repro} shows that Sentinel's released checkpoints reproduce its published results on our port. This section restates the model so that the proofs in Section~\ref{sec:s-proofs} can be checked line by line.
+
+\textbf{Traffic.} The link capacity is $C=1000$ units per window. Benign traffic is $L_t\sim\mathrm{Poisson}(300)$; during a flash crowd it is multiplied by a factor drawn from $\mathcal{U}(2.5,4)$. The attack has a family $k_t\in\{\text{none},\text{SYN},\text{UDP},\text{HTTP},\text{ICMP},\text{mixed}\}$, an intensity $i_t\in[0,1]$ and a mutation level $m_t\in[0,1]$. Its volume is $A_t=1.5\,C\,i_t$, so a full-intensity flood alone exceeds the link by half.
+
+\textbf{Action.} The defender chooses a load threshold $\tau_t\in(0,1)$, a filtering focus $f_t\in\{\text{SrcIP},\text{Proto},\text{Size}\}$ and a drop probability $d_t\in(0,1)$. Only the load above the threshold is filtered. The share of the offered load exposed to filtering is
+\begin{equation}
+\alpha_t(\tau)=\mathrm{clip}\!\left(\frac{L_t+A_t-C\tau}{L_t+A_t},\,0,\,1\right).
+\end{equation}
+
+\textbf{Effectiveness and collateral damage.} The match between focus and family is $\eta_t=\eta_{k_t f_t}\,(1-m_t/2)$, with the base values of Table~\ref{tab:s-match}. In an attacked window the shares of attack traffic dropped and of benign traffic lost are
+\begin{align}
+\mathrm{eff}_t &= \min\{1,\;\eta_t\,d_t\,\alpha_t(\tau_t)\},\\
+\mathrm{CD}_t &= \min\Big\{1,\;0.4\,d_t\,(1-\eta_t)\,\alpha_t(\tau_t)+0.2\,\big[L_t-C\tau_t\big]^+/L_t\Big\}. \label{eq:s-cd}
+\end{align}
+Without an attack, the collateral damage is $\min\{1,\,0.05\,d_t\,\alpha_t(\tau_t)+0.1\,[L_t-C\tau_t]^+/L_t\}$. The leakage is $\mathrm{leak}_t=1-\mathrm{eff}_t$ in attacked windows.
+
+\textbf{Service quality.} With the congestion factor $\rho_t=\min\{1,\,C/(L_t+A_t)\}$, computed on the offered (pre-filter) load,
+\begin{equation}
+\mathrm{SQ}_t=\rho_t\,(1-\mathrm{CD}_t). \label{eq:s-sq}
+\end{equation}
+A window is a \emph{severe outage} if $\mathrm{SQ}_t<0.5$ and \emph{degraded} if $\mathrm{SQ}_t<0.75$. Under a full-intensity flood, $\rho_t\approx1000/1800=0.556$, so even perfect filtering cannot lift service quality above 0.556, and a collateral damage of only about 0.10 already causes a severe outage.
+
+\textbf{Score.} The operator's per-window composite score is Sentinel's benchmark,
+\begin{equation}
+b_t=\mathrm{SQ}_t-\mathrm{leak}_t-0.5\,\mathbf{1}[\mathrm{SQ}_t<0.5]-0.25\,\mathbf{1}[\mathrm{SQ}_t<0.75].
+\end{equation}
+All GRPO variants and the PPO baseline optimise $b_t$ directly. Sentinel's checkpoints were trained on its shaped reward and selected with $b_t$.
+
+\textbf{Observation.} The defender observes twelve aggregate indicators of the served traffic in $[0,1]$: packet rate, byte rate, link utilisation, the TCP, UDP, ICMP and HTTP shares, the entropies of source address, destination port and packet size, a flow count and a queue (overload) signal. Small Gaussian noise is added to the protocol shares, the entropies and the packet rate. The protocol shares and entropies depend on the share of attack traffic that is served. The observation therefore depends on the previous action, which matters for the multi-step discussion in Section~\ref{sec:s-proofs}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Base Match Effectiveness $\eta_{kf}$ Between Attack Family and Filtering Focus~\cite{sentinelcode}}
+\label{tab:s-match}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Family & SrcIP & Proto & Size \\
+\midrule
+SYN & 0.6 & 0.8 & 0.0 \\
+UDP & 0.0 & 0.9 & 0.0 \\
+HTTP & 0.7 & 0.0 & 0.5 \\
+ICMP & 0.0 & 0.9 & 0.0 \\
+Mixed & 0.4 & 0.4 & 0.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\input{tab_repro.tex}
+
+% ===========================================================================
+\section{Symbolic Shield}
+\label{sec:s-shield}
+% ===========================================================================
+The shield $\mathcal{S}_\phi$ is Sentinel's rule set~\cite{alfatemi2026sentinel}, applied in the order of Table~\ref{tab:s-shield}. Each rule's trigger depends only on the observation $\mathbf{o}_t$ and on the proposed focus $f$. Each rule that changes $d$ or $\tau$ is a clamp of the form $\min\{\cdot,c\}$ or $\max\{\cdot,c\}$ with a constant $c$. IMBANG may tune the three PanicGuard constants $\phi=(g_u,g_d,g_\tau)$, defaults $(0.6,0.1,0.4)$, under the certificate described in Section~\ref{sec:s-train}. All other constants stay as in Sentinel.
+
+\begin{table}[!htbp]
+\centering
+\caption{Shield Rules in Order of Application (util: link utilisation; src, size: entropies; udp, icmp, http: protocol shares)}
+\label{tab:s-shield}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}clll@{}}
+\toprule
+\# & Rule & Trigger & Repair \\
+\midrule
+1 & PanicGuard (drop) & util $<g_u$ & $d\leftarrow\min\{d,\,g_d\}$ \\
+2 & PanicGuard (threshold) & util $<g_u$ & $\tau\leftarrow\max\{\tau,\,g_\tau\}$ \\
+3 & HTTP source-address exception & src $>0.85$, $f=$ SrcIP, util $>0.6$, http $>0.3$ & keep $f$ \\
+4 & SpoofingGuard (protocol) & src $>0.85$, $f=$ SrcIP, util $>0.6$, rule 3 not met, a protocol share $>0.5$ & $f\leftarrow$ Proto \\
+5 & SpoofingGuard (size) & as rule 4 but no protocol share $>0.5$ and size $<0.3$ & $f\leftarrow$ Size \\
+6 & SpoofingGuard (fallback) & as rule 4 but no protocol share $>0.5$ and size $\ge0.3$ & $f\leftarrow$ Proto \\
+7 & Protocol-anomaly guard & a protocol share $>0.8$, util $>0.6$, $f\ne$ Proto, not (http $>0.8$ and $f=$ SrcIP) & $f\leftarrow$ Proto \\
+8 & ICMP focus override & icmp $>0.3$, util $>0.6$, $f\ne$ Proto & $f\leftarrow$ Proto \\
+9 & ICMP drop override & icmp $>0.3$, util $>0.6$ & $d\leftarrow\max\{d,\,0.5\}$ \\
+10 & ICMP threshold override & icmp $>0.3$, util $>0.6$ & $\tau\leftarrow\min\{\tau,\,0.5\}$ \\
+11 & Extreme-drop cap & always & $d\leftarrow\min\{d,\,0.95\}$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+% ===========================================================================
+\section{Proofs and an Empirical Check}
+\label{sec:s-proofs}
+% ===========================================================================
+\textbf{Setting.} A GRPO group contains $G$ members that start from the same state and replay the same traffic, so they differ only in their actions. Member $g$ collects the objective $O_g=\sum_{h=1}^{H}b_h$ and the outage count $K_g=\sum_{h=1}^{H}\mathbf{1}[\mathrm{SQ}_h<0.5]$. With a multiplier $\lambda\ge0$, its return is $R_g=O_g-\lambda K_g$. The group-normalised advantage is
+\begin{equation}
+\hat A_g=\frac{R_g-\bar R}{s_R},\qquad \bar R=\frac1G\sum_{g'}R_{g'},\quad s_R=\Big(\frac1G\sum_{g'}(R_{g'}-\bar R)^2\Big)^{1/2},
+\end{equation}
+with $\hat A_g:=0$ when $s_R=0$.
+
+\begin{proposition}[Constraint cancellation]
+If $K_g\equiv K$ for every member of a group, then $\hat A_g$ does not depend on $\lambda$. The same holds for the channel-wise advantage $\hat A_g=\mathrm{z}(O)_g-\lambda\,\mathrm{z}(K)_g$ of Constrained GRPO~\cite{girgis2026cgrpo}, with the convention $\mathrm{z}(K)_g:=0$ when $s_K=0$.
+\end{proposition}
+\begin{proof}
+If $K_g\equiv K$, then $\bar R=\bar O-\lambda K$, so $R_g-\bar R=O_g-\bar O$ for every $g$. The two sets of deviations coincide, so $s_R=s_O$ and $\hat A_g=(O_g-\bar O)/s_O$, which does not contain $\lambda$. For the channel-wise form, $K_g\equiv K$ gives $s_K=0$, hence $\mathrm{z}(K)\equiv0$ and $\hat A_g=\mathrm{z}(O)_g$.
+\end{proof}
+
+\begin{remark}
+The argument uses only the fact that the advantage is invariant to adding the same constant to every return in a group. It therefore covers any group-centred advantage, with or without scaling. In such a group, the policy-gradient estimate is identical for every value of $\lambda$, so raising the multiplier cannot change the update. This is what Fig.~4 of the letter shows for ``budget only''. An \emph{uncentred} cost term, $\hat A_g-\lambda(K_g/H-\kappa)$, survives the centring but adds the same value to every member of such a group. In the clipped surrogate this shifts all sampled actions alike instead of pointing towards safer ones. This is consistent with the result in Table~\ref{tab:s-methods} that the uncentred cost does not restore feasibility.
+\end{remark}
+
+\begin{proposition}[Safe-side direction]
+Let a policy member and the safe-side member observe the same $\mathbf{o}_t$ and face the same traffic in window $t$. The policy member proposes $(\tau,f,d)$, and the safe-side member executes $(\tilde\tau,\tilde f,\tilde d)=(\tau+(1-u)(1-\tau),\,f,\,u\,d)$ with $u\in[0.2,0.8]$. Then, after shielding, $\mathrm{CD}_t^{\mathrm{safe}}\le\mathrm{CD}_t^{\mathrm{policy}}$ and $\mathrm{SQ}_t^{\mathrm{safe}}\ge\mathrm{SQ}_t^{\mathrm{policy}}$. Consequently, the safe-side member is in a severe (or degraded) outage only if the policy member is.
+\end{proposition}
+\begin{proof}
+\emph{(i) Before the shield.} Since $0\le u\le1$ and $\tau\le1$, we have $\tilde d=u\,d\le d$ and $\tilde\tau=\tau+(1-u)(1-\tau)\ge\tau$. Both stay in $[0,1]$.
+
+\emph{(ii) Through the shield.} The rules that change the focus (3--8 in Table~\ref{tab:s-shield}) are triggered by $\mathbf{o}_t$ and the proposed focus only, and $\tilde f=f$. Both members therefore leave the shield with the same focus $f'$. Each rule acting on $d$ (1, 9, 11) has a trigger that depends on $\mathbf{o}_t$ only and applies $\min\{\cdot,c\}$ or $\max\{\cdot,c\}$. These maps are non-decreasing, and so is their composition. Hence $\tilde d\le d$ implies $\mathcal{S}(\tilde d)\le\mathcal{S}(d)$. The same argument applies to $\tau$ (rules 2 and 10) and gives $\mathcal{S}(\tilde\tau)\ge\mathcal{S}(\tau)$.
+
+\emph{(iii) Through the service model.} With the same family, mutation and final focus $f'$, both members have the same $\eta_t$. In~\eqref{eq:s-cd}, $1-\eta_t\ge0$; $\alpha_t(\tau)$ and $[L_t-C\tau]^+$ are non-increasing in $\tau$; and the expression is non-decreasing in $d$. The no-attack expression has the same monotonicity, and $\min\{1,\cdot\}$ preserves it. Hence $\mathrm{CD}_t^{\mathrm{safe}}\le\mathrm{CD}_t^{\mathrm{policy}}$. Finally, $\rho_t$ in~\eqref{eq:s-sq} depends on the offered load only, not on the action, so $\mathrm{SQ}_t^{\mathrm{safe}}=\rho_t(1-\mathrm{CD}_t^{\mathrm{safe}})\ge\rho_t(1-\mathrm{CD}_t^{\mathrm{policy}})=\mathrm{SQ}_t^{\mathrm{policy}}$. Both outage indicators are monotone in $\mathrm{SQ}_t$.
+\end{proof}
+
+\textbf{Scope.} Proposition~2 is a statement about a single window, given the same observation. Two assumptions are structural. First, congestion is computed on the offered load. If filtering took place upstream of the bottleneck, a weaker filter could itself overload the link. Second, the shield acts through coordinate-wise clamps whose triggers do not depend on $d$ or $\tau$.
+
+Over a rollout the two members' observations can diverge, because the protocol shares and entropies depend on how much attack traffic was served. A weaker filter serves more attack traffic, which can change later observations and hence later actions. The single-window guarantee therefore does not, by itself, imply an ordering of whole episodes.
+
+We test the multi-step version empirically in Table~\ref{tab:s-safe}. Each trained IMBANG policy and its safe-shifted copy, with $u$ drawn once per episode, face identical traffic in all nine Protocol~B scenarios. In all \nSafeEpisodes\ episodes (ten seeds, nine scenarios, 20 episodes each), the safe copy had more severe windows than the policy in $\safeMorePct\%$ of episodes, that is, never. Under heavy floods it usually had fewer, and its episode-average collateral damage never exceeded the policy's. As the construction intends, it pays for this with higher leakage, which is why it serves as a training signal rather than as a deployed policy.
+
+\input{tab_safecheck.tex}
+
+% ===========================================================================
+\section{Training Details}
+\label{sec:s-train}
+% ===========================================================================
+\textbf{Groups.} Each iteration samples $B=32$ training contexts, i.e.\ attack levels with their traffic. Each context is run for a random warm-up of 0--40 windows under the current policy and then forked into $G=8$ members that share all random numbers from the fork onwards~\cite{ng2000pegasus}. In IMBANG the members are:
+\begin{itemize}
+\item four ordinary policy samples;
+\item one safe-side member: a policy sample transformed as in Proposition~2, with $u\sim\mathcal{U}(0.2,0.8)$ drawn once per rollout;
+\item two shield probes: policy samples deployed under a perturbed PanicGuard;
+\item one archive elite: the best stored solution for the level's niche, replaced by a policy sample when none exists.
+\end{itemize}
+Each member is rolled out for $H=8$ windows.
+
+\textbf{Update.} The returns are $R_g=O_g-\lambda K_g$ and the advantages are group-normalised. Policy members and shield probes enter the clipped surrogate~\cite{schulman2017ppo}. The safe-side member and the elite enter only through the term
+\begin{equation}
+-c\,[\hat A_g]^+\log\pi_\theta(a_g\,|\,\mathbf{o}),\qquad c=0.5,
+\end{equation}
+so the policy moves towards them only when they outperformed their group. The loss also contains an entropy bonus and a KL penalty towards the best validated checkpoint (the anchor). It is minimised with Adam for four epochs per iteration. Table~\ref{tab:s-hyper} lists all values.
+
+\textbf{Budget and selection.} Every 20 iterations the deterministic policy is evaluated on the validation battery (benign, mild, strong and chaos traffic; ten episodes of 100 windows each, with fixed random numbers). This gives the severe-outage rate $\hat\sigma$ and the validation score. The multiplier follows dual ascent, $\lambda\leftarrow[\lambda+\eta_\lambda(\hat\sigma-\kappa)]^+$, with $\eta_\lambda=4$ and $\kappa=0.05$. The deployed checkpoint is chosen lexicographically: any checkpoint that meets the budget beats every checkpoint that does not. Among feasible checkpoints the validation score decides; among infeasible ones, the lower outage rate does.
+
+\textbf{Curriculum.} Training contexts come from 360 discrete levels: five family patterns (SYN, UDP, HTTP, mixed, switching), six intensity bands, three mutation bands, pulsing on or off, and flash crowds on or off. ICMP is excluded. At every validation round, each level is scored with the current policy (two episodes of 50 windows, fixed random numbers). Its MaxMC regret is the best score any earlier snapshot achieved on that level minus the current score~\cite{jiang2021robustplr}. With probability 0.5 a context is drawn from the prioritised-replay distribution of~\cite{jiang2021plr}: rank-based regret priority with temperature 0.3, mixed with a 0.3 share of staleness. Otherwise it is drawn uniformly over the levels.
+
+\textbf{Certified shield tuning.} Every 20 iterations, eight PanicGuard candidates are proposed. Up to three lie along the direction accumulated from the shield probes' advantages; the rest are random perturbations. A candidate is adopted only if it meets three conditions:
+\begin{itemize}
+\item it improves the validation score by at least 0.002;
+\item it keeps the validation outage rate within the budget;
+\item it shows no safety regression against Sentinel's default shield on a certification battery of benign and flash-crowd traffic (ten episodes of 100 windows, fixed random numbers): service quality may not fall by more than 0.002 (benign) or 0.005 (flash crowd), and there may be no additional severe or degraded windows.
+\end{itemize}
+The certificate is empirical, not a formal guarantee.
+
+\input{tab_hyper.tex}
+
+% ===========================================================================
+\section{Evaluation Protocols and Statistics}
+\label{sec:s-eval}
+% ===========================================================================
+\textbf{Protocol B (attacker-agnostic).} Nine open-loop scenarios (Table~\ref{tab:s-scen}), each with 20 episodes of 100 windows per seed. The first five mirror Sentinel's evaluation scenarios. The last four are held-out stress tests that were never used for training or model selection. ICMP traffic appears only at test time.
+
+\textbf{Protocol A (Sentinel's own attackers).} For each seed, the attacker that Sentinel trained alongside its defender drives five scenarios with five episodes of 100 windows each, reproducing Sentinel's evaluation script. Averages in the letter and in Table~\ref{tab:s-a} are taken over the four attack scenarios and exclude benign traffic.
+
+\textbf{Protocol C (red team).} A cross-entropy search explores the full 14-dimensional scenario space, ICMP included:
+\begin{itemize}
+\item eight iterations of 48 candidates;
+\item each candidate scored on four episodes of 60 windows;
+\item the elite is the best 20\%.
+\end{itemize}
+The worst scenario found is then re-scored on 20 fresh episodes of 100 windows.
+
+\textbf{Common random numbers and statistics.} For a given seed and scenario, all defenders face identical traffic, so comparisons are paired by seed. We report means with 95\% $t$-intervals over the ten seeds. The tests are paired $t$-tests with Holm correction across the eight attack scenarios for each metric, and two-sided Wilcoxon signed-rank tests. With ten pairs, the smallest attainable Wilcoxon $p$-value is 0.002.
+
+\input{tab_scenarios.tex}
+
+% ===========================================================================
+\section{Extended Results}
+\label{sec:s-results}
+% ===========================================================================
+Tables~\ref{tab:s-b1} and~\ref{tab:s-b2} extend Table~II of the letter with confidence intervals, service quality, leakage and the PPO baseline. Table~\ref{tab:s-tests} gives the paired tests behind the significance marks. Table~\ref{tab:s-a} reports Protocol~A by scenario, and Table~\ref{tab:s-methods} compares all trained methods across the three protocols. Fig.~\ref{fig:s-seeds} shows the seed-level pairs: IMBANG scores higher than Sentinel on every seed and has a far narrower spread of outages. Fig.~\ref{fig:s-scen} breaks the severe outages down by scenario.
+
+Table~\ref{tab:s-methods} also lists the four reference heuristics shipped with Sentinel's code. They show why the outage count alone is not a sufficient measure. Sentinel's adaptive heuristic matches IMBANG's outage count (14.5 against 14.8 per 500 windows), but only because it filters very little: it lets 96.9\% of the attack traffic through, against 83.9\% for IMBANG. Its composite score is lower than that of every learned defender.
+
+\input{tab_protB1.tex}
+\input{tab_protB2.tex}
+\input{tab_tests.tex}
+\input{tab_protA.tex}
+\input{tab_methods.tex}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/seeds.pdf}
+\caption{Seed-level comparison under Protocol~B (scenario average over the eight attack scenarios). Grey lines connect the same seed. (a) Composite score. (b) Severe outages per 500 windows.}
+\label{fig:s-seeds}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/scenarios.pdf}
+\caption{Severe outages per 500 windows by Protocol~B scenario (mean and 95\% confidence interval over ten seeds; $\ast$ marks held-out stress tests).}
+\label{fig:s-scen}
+\end{figure}
+
+\textbf{Red team.} Table~\ref{tab:s-redteam} details the worst cases. For Sentinel the search most often settles on HTTP floods; for the PPO and GRPO-trained defenders it mostly settles on mixed floods. Among learned defenders, IMBANG and its variant with C-GRPO normalisation have the best worst cases ($-0.72$ and $-0.71$) and the smallest spread across seeds. Sentinel's adaptive heuristic reaches a similar worst case ($-0.71$), but its average leakage is far higher (Table~\ref{tab:s-methods}).
+
+\input{tab_redteam.tex}
+
+\textbf{Operating curve.} Table~\ref{tab:s-int} lists the data of Fig.~3 of the letter.
+
+\input{tab_intensity.tex}
+
+% ===========================================================================
+\section{Mechanism Diagnostics}
+\label{sec:s-mech}
+% ===========================================================================
+Table~\ref{tab:s-mech} gives the per-method values behind Fig.~2 of the letter. Across methods, a narrow drop spread goes with a low span rate and with frequent outages: plain GRPO samples drop probabilities with a spread of only 0.05 and is in a severe outage in 76\% of overload windows.
+
+The table also shows that the safe-side member does not work by widening the trained policy's own action spread. Under strong floods, the budget-only policies span 93\% of overload groups yet remain in outage in 35\% of windows; IMBANG spans 89\% and is in outage in 19\%. The same holds during training: Fig.~\ref{fig:s-span} shows that the span rate, averaged over all training contexts, is similar with and without the safe-side member (0.42 and 0.43 over the last 100 iterations).
+
+What the member adds is a group member that is guaranteed to be no less safe, and whose advantage is positive whenever the gentler action paid off. The update thus gets a direction towards fewer outages that does not depend on the policy's own exploration. This is consistent with Fig.~4 of the letter, where the multiplier stays small for IMBANG but keeps growing without the member.
+
+\input{tab_mechanism.tex}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/spanrate.pdf}
+\caption{Span rate during training: share of groups whose members differ in outage count, averaged over all training contexts (mean and 95\% confidence band over ten seeds). The safe-side member does not raise this average; its effect is on the direction of the update (Section~\ref{sec:s-mech}).}
+\label{fig:s-span}
+\end{figure}
+
+% ===========================================================================
+\section{Per-Seed Results and Interpretability}
+\label{sec:s-interp}
+% ===========================================================================
+Table~\ref{tab:s-seeds} lists, for each seed, IMBANG's Protocol~B results, its final validation outage rate and multiplier, the fidelity of the distilled depth-4 rule trees, and the certified PanicGuard constants. Seed~43 is the one run whose final validation outage rate (0.076) exceeds the budget. The focus tree of seed~42 is reproduced below as an example of the rules an operator can audit. Class 0 is source-address filtering and class 1 is protocol filtering; the threshold and drop trees are in the archive.
+
+\begin{center}
+\begin{minipage}{0.6\textwidth}
+\footnotesize
+\begin{verbatim}
+|--- http_ratio <= 0.219
+|   |--- class: 1
+|--- http_ratio >  0.219
+|   |--- packet_size_entropy <= 0.644
+|   |   |--- class: 0
+|   |--- packet_size_entropy >  0.644
+|   |   |--- udp_ratio <= 0.086
+|   |   |   |--- total_packet_rate <= 0.785
+|   |   |   |   |--- class: 0
+|   |   |   |--- total_packet_rate >  0.785
+|   |   |   |   |--- class: 1
+|   |   |--- udp_ratio >  0.086
+|   |   |   |--- class: 1
+\end{verbatim}
+\end{minipage}
+\end{center}
+
+\input{tab_seeds.tex}
+
+% ===========================================================================
+\section{Simulated Operator for Zero-Shot ICMP Floods}
+\label{sec:s-human}
+% ===========================================================================
+The letter notes that IMBANG has more severe outages than Sentinel under zero-shot ICMP floods, and that an operator applying Sentinel's ICMP constants closes the gap. Table~\ref{tab:s-human} gives the full study. It is a sensitivity analysis with a simulated operator, not a user study. The playbook constants are Sentinel's own ICMP override values, fixed a priori. With 90\% recognition accuracy the playbook lowers IMBANG's ICMP outages from 17.9 to 2.1 per 500 windows. The composite score falls slightly, from $-0.463$ to $-0.480$, because the fixed playbook filters less aggressively and leakage rises. The same operator also helps Sentinel (from 6.9 to 0.7), so the playbook narrows the difference between the two defenders rather than reversing it.
+
+\input{tab_human.tex}
+
+% ===========================================================================
+\section{Code, Data and Reproduction}
+\label{sec:s-repro}
+% ===========================================================================
+The archive \texttt{IMBANG\_supplementary.zip} contains:
+\begin{itemize}
+\item the simulator port, the shield, the learners and the evaluation code;
+\item the equivalence tests against Sentinel's reference implementation;
+\item the per-seed result files behind every table and figure;
+\item the trained checkpoints, ten seeds for each method in Table~\ref{tab:s-names} (champion and final networks, training logs, distilled rule trees and certified shield constants);
+\item this document.
+\end{itemize}
+Sentinel's checkpoints are not redistributed; they are available from its public repository~\cite{sentinelcode}. The archive's \texttt{README.md} maps every table and figure to the script and data file that produce it. In brief:
+\begin{itemize}
+\item \texttt{pytest tests} checks the port;
+\item \texttt{scripts/nl\_assets.py} and \texttt{scripts/supp\_assets.py} regenerate the tables and figures from the included results in under a minute;
+\item \texttt{scripts/evaluate.py} re-evaluates the included checkpoints under Protocols A--C;
+\item \texttt{scripts/train.py} retrains a method.
+\end{itemize}
+One training run takes 3--5 minutes on a single CPU core. The full grid of ten methods and ten seeds takes about 6--8 CPU-hours. Evaluation is deterministic: re-running Protocol~B on the included checkpoints reproduces Tables~\ref{tab:s-b1}--\ref{tab:s-b2} exactly.
+
+\textbf{Scope.} All results come from Sentinel's simulator, not from production traffic. The simulator and shield port are derived from Sentinel's MIT-licensed code~\cite{sentinelcode}.
+
+\bibliographystyle{IEEEtran}
+\bibliography{../refs}
+
+\end{document}

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from nscsd.stats import ci95, dominates, holm, paired  # noqa: E402
 
 RES, FIG = "results", "paper/figures"
-SENTINEL_RUN = "/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper"
+from nscsd.paths import SENTINEL_RUN  # noqa: E402
 # Reference categorical palette (fixed order): NS-CSD, Sentinel, PPO; everything else is gray ink.
 C = {"nscsd": "#2a78d6", "Sentinel": "#eb6834", "ppo": "#1baf7a"}
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"

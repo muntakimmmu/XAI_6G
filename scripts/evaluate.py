@@ -26,6 +26,7 @@ from nscsd import scenarios as S  # noqa: E402
 from nscsd.agents import AdaptiveDefender, NetDefender, RandomDefender, StaticDefender  # noqa: E402
 from nscsd.policy import DefenderNet, load_sentinel_attacker, load_sentinel_defender  # noqa: E402
 from nscsd.rollout import benchmark_score, run_closed_loop, run_open_loop, summarize  # noqa: E402
+from nscsd.paths import SENTINEL_MODELS  # noqa: E402
 from nscsd.shield import RULES  # noqa: E402
 
 torch.set_num_threads(1)
@@ -118,7 +119,7 @@ def main():
     ap.add_argument("--physics", default="inline", help="simulator physics used for evaluation")
     ap.add_argument("--train_physics", default="inline", help="which trained runs to load")
     ap.add_argument("--sentinel_models",
-                    default="/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models")
+                    default=SENTINEL_MODELS)
     ap.add_argument("--out", default="results")
     ap.add_argument("--seeds", type=int, nargs="*", default=SEEDS)
     ap.add_argument("--protocols", default="ABC")

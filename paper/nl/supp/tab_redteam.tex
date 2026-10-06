@@ -1,0 +1,30 @@
+\begin{table}[!htbp]
+\centering
+\caption{Protocol~C: Worst Case Found by the Cross-Entropy Red Team (Ten Seeds)}
+\label{tab:s-redteam}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccl@{}}
+\toprule
+Method & Worst composite & Severe / 500 & Quality & Leakage & Intensity & Worst family (seeds) \\
+\midrule
+Sentinel & $-1.07\pm0.17$ & $359.6\pm127.3$ & 0.494 & 0.960 & 0.98 & http 7, mixed 3 \\
+PPO + shield & $-0.79\pm0.09$ & $141.4\pm84.4$ & 0.505 & 0.909 & 0.97 & mixed 9, syn 1 \\
+GRPO, no budget & $-1.07\pm0.08$ & $466.6\pm37.7$ & 0.462 & 0.821 & 0.97 & mixed 7, http 2, syn 1 \\
+MaxMC curriculum, no budget & $-0.88\pm0.12$ & $254.3\pm127.1$ & 0.487 & 0.868 & 0.97 & mixed 7, http 2, syn 1 \\
+GRPO + budget & $-0.87\pm0.15$ & $213.0\pm151.4$ & 0.500 & 0.908 & 0.97 & mixed 9, udp 1 \\
+\;\;+ entropy bonus $\times6$ & $-0.85\pm0.16$ & $208.7\pm161.1$ & 0.501 & 0.893 & 0.97 & mixed 9, syn 1 \\
+\;\;+ uncentred cost & $-0.87\pm0.13$ & $214.3\pm132.5$ & 0.502 & 0.907 & 0.97 & mixed 10 \\
+C-GRPO & $-0.80\pm0.13$ & $155.5\pm121.3$ & 0.505 & 0.905 & 0.97 & mixed 9, http 1 \\
+\textbf{IMBANG} & $-0.72\pm0.03$ & $67.8\pm46.3$ & 0.521 & 0.921 & 0.96 & mixed 8, http 1, udp 1 \\
+IMBANG + C-GRPO norm. & $-0.71\pm0.02$ & $46.4\pm24.3$ & 0.523 & 0.935 & 0.97 & mixed 8, http 2 \\
+\midrule
+Adaptive heuristic & $-0.71\pm0.01$ & $29.4\pm2.0$ & 0.558 & 0.995 & 0.96 & http 8, mixed 2 \\
+Static rule & $-0.88\pm0.09$ & $150.1\pm80.7$ & 0.509 & 0.988 & 0.97 & http 10 \\
+Random actions + shield & $-0.93\pm0.02$ & $253.7\pm15.0$ & 0.486 & 0.919 & 0.97 & http 6, mixed 4 \\
+Random actions & $-0.97\pm0.03$ & $263.7\pm16.6$ & 0.479 & 0.935 & 0.97 & udp 6, icmp 3, http 1 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize The red team searches the full 14-dimensional scenario space, ICMP included, for the scenario that minimises each defender's composite score.}
+\end{table}

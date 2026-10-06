@@ -1,0 +1,22 @@
+\begin{table}[!htbp]
+\centering
+\caption{Sentinel's Released Checkpoints: Published Results and Our Port}
+\label{tab:s-repro}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{Quality} & \multicolumn{2}{c}{Leakage} & \multicolumn{2}{c}{Severe / 500} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}
+Scenario & Published & Port & Published & Port & Published & Port \\
+\midrule
+Benign & 1.000 & 1.000 & 0.000 & 0.000 & 0.0 & 0.0 \\
+Chaos/flash crowd & 0.699 & 0.701 & 0.836 & 0.836 & 25.3 & 22.0 \\
+Mild & 0.971 & 0.971 & 0.921 & 0.921 & 0.0 & 0.0 \\
+Strong & 0.519 & 0.519 & 0.815 & 0.815 & 75.0 & 78.2 \\
+Zero-shot ICMP & 0.529 & 0.529 & 0.747 & 0.747 & 0.0 & 0.0 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Published: Sentinel's evaluation tables. Port: our batched simulator with Sentinel's evaluation protocol and its released seed-42--51 checkpoints.}
+\end{table}

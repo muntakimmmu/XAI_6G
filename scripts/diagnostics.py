@@ -23,7 +23,7 @@ from nscsd.rollout import benchmark_score, run_closed_loop, run_open_loop, summa
 from nscsd.shield import R, repair  # noqa: E402
 
 torch.set_num_threads(1)
-RUN = "/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper"
+from nscsd.paths import SENTINEL_RUN as RUN  # noqa: E402
 M = os.path.join(RUN, "models")
 GRID = np.array([(t, f, d) for t in np.linspace(0, 1, 21) for f in range(3) for d in np.linspace(0, 0.95, 20)])
 

@@ -24,7 +24,7 @@ from nscsd.policy import DefenderNet, load_sentinel_defender  # noqa: E402
 from nscsd.shield import repair  # noqa: E402
 
 torch.set_num_threads(1)
-SM = "/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models"
+from nscsd.paths import SENTINEL_MODELS as SM  # noqa: E402
 
 
 def probe(net, kw, seed, scen="strong", B=64, G=8, H=8, W=20):

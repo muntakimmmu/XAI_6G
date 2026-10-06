@@ -1,0 +1,24 @@
+\begin{table}[!htbp]
+\centering
+\caption{Protocol~B Evaluation Scenarios}
+\label{tab:s-scen}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{4.2cm}cccccl@{}}
+\toprule
+Scenario & Attack families (weights) & Persistence & Intensity & Mutation & Pulse period / duty & Flash prob. & Role \\
+\midrule
+Benign & none & 0.95 & [0.0, 0.0] & [0.0, 1.0] & -- & 0.00 & Sentinel scenario \\
+Mild & SYN, UDP, HTTP, mixed & 0.95 & [0.0, 0.3] & [0.0, 1.0] & -- & 0.00 & Sentinel scenario \\
+Strong & SYN, UDP, HTTP, mixed & 0.95 & [1.0, 1.0] & [0.0, 1.0] & -- & 0.00 & Sentinel scenario \\
+Chaos/flash & none, SYN, UDP, HTTP, mixed & 0.95 & [0.0, 1.0] & [0.0, 1.0] & -- & 0.05 & Sentinel scenario \\
+ICMP (zero-shot) & ICMP & 0.95 & [1.0, 1.0] & [0.0, 1.0] & -- & 0.00 & Sentinel scenario (unseen family) \\
+Pulsing$^\ast$ & SYN, UDP, HTTP, mixed & 0.95 & [1.0, 1.0] & [0.0, 1.0] & 10 / 0.5 & 0.00 & held-out stress test \\
+Polymorphic$^\ast$ & SYN, UDP, HTTP, mixed & 0.50 & [0.5, 1.0] & [0.7, 1.0] & -- & 0.00 & held-out stress test \\
+Boundary$^\ast$ & SYN, UDP, HTTP, mixed & 0.95 & [0.3, 0.6] & [0.0, 1.0] & -- & 0.00 & held-out stress test \\
+ICMP-chaos$^\ast$ & none (0.12), SYN (0.12), UDP (0.12), HTTP (0.12), ICMP (0.38), mixed (0.12) & 0.95 & [0.5, 1.0] & [0.0, 1.0] & -- & 0.05 & held-out stress test \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Families switch with probability $1-$persistence per window; intensity and mutation are redrawn uniformly from their ranges on each switch. $^\ast$Never used for training or model selection.}
+\end{table}

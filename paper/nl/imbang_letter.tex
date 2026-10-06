@@ -190,7 +190,7 @@ We re-implemented Sentinel's public simulator and shield~\cite{sentinelcode} in 
 \item All results come from simulation.
 \end{itemize}
 
-\textbf{Why one member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck: without a safe-side member, $\lambda$ grows steadily while the outage rate barely moves, because most groups contain no member that avoids the outage. One guaranteed no-less-safe member gives the constraint a direction, so IMBANG meets the budget early with $\lambda$ almost constant. It replaces one of the eight members, so an iteration costs no more.
+\textbf{Why one member suffices.} Fig.~\ref{fig:dyn} shows that the multiplier is not the bottleneck: without a safe-side member, $\lambda$ grows steadily while the outage rate barely moves. One guaranteed no-less-safe member gives the constraint a reliable direction, independent of the policy's own exploration, so IMBANG meets the budget early with $\lambda$ almost constant. It replaces one of the eight members, so an iteration costs no more.
 
 \textbf{Interpretability.} Depth-4 decision trees distilled from the final policies reproduce the filtering focus with 99.8\% held-out accuracy and the threshold and drop rate with mean absolute errors of 0.013 and 0.017. Behind the same shield they match the neural policy's validation score, so operators can audit or replace the network. The certified shield tuning is equally readable: it lowered the PanicGuard utilisation gate from 0.60 to 0.52 on average.
 

@@ -34,10 +34,10 @@ models/       NS-CSD champion policies, discovered shields and tree programs (10
 
 ```bash
 pip install -r requirements.txt
-git clone https://github.com/AliAlfatemi/sentinel-ddos ../alialfatemi/sentinel-ddos   # reference + checkpoints
-SENTINEL_REPO=../alialfatemi/sentinel-ddos python -m pytest -q tests                  # port == reference
+git clone https://github.com/AliAlfatemi/sentinel-ddos ../sentinel-ddos   # reference + checkpoints
+python -m pytest -q tests                  # port == reference (set SENTINEL_REPO for another location)
 bash scripts/run_all.sh inline            # train all methods (4 workers, several CPU-hours)
-python scripts/evaluate.py --sentinel_models ../alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models
+python scripts/evaluate.py
 python scripts/diagnostics.py             # reproduction of Sentinel's table + oracle headroom
 python scripts/analyze.py                 # tables -> results/RESULTS.md, figures -> paper/figures
 ```
@@ -52,3 +52,9 @@ It is not a formal proof. See the Limitations section of the paper.
 
 The simulator and shield port are derived from Sentinel's MIT-licensed code
 (https://github.com/AliAlfatemi/sentinel-ddos).
+
+## Supplementary material (IEEE Networking Letters)
+
+`bash scripts/make_supplementary.sh` builds `dist/IMBANG_supplementary_material.pdf` (from
+`paper/nl/supp/`) and `dist/IMBANG_supplementary.zip` (code, results, checkpoints; see
+`supplementary/README.md`).

@@ -1,0 +1,36 @@
+\begin{table}[!htbp]
+\centering
+\caption{Hyperparameters (Fixed Before the Ten-Seed Runs)}
+\label{tab:s-hyper}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Setting & Value & Note \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{GRPO learner (shared by all GRPO variants)}} \\
+Iterations & 500 & validation every 20 iterations \\
+Contexts per iteration $B$ / group size $G$ / horizon $H$ & 32 / 8 / 8 & warm-up 0--40 windows before the fork \\
+Group composition (IMBANG) & 4 + 1 + 2 + 1 & policy samples, safe-side member, shield probes, archive elite \\
+Optimiser & Adam, lr $0.0003$ & 4 epochs, minibatch 512, gradient-norm clip 0.5 \\
+Clipping / entropy / KL-anchor weight & 0.2 / 0.005 / 0.02 & KL to the best validated checkpoint \\
+Weight of the likelihood term $c$ & 0.5 & safe-side member and elite, $-c\,[\hat A]^+\log\pi_\theta$ \\
+Objective & composite score $b_t$ & Sentinel's benchmark weights (severe 0.5, degraded 0.25) \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{IMBANG-specific}} \\
+Safe-side shift $u$ & $\mathcal{U}(0.2, 0.8)$ & drawn once per rollout \\
+Outage budget $\kappa$ & 0.05 & severe-outage rate on the validation battery \\
+Dual step $\eta_\lambda$ & 4.0 & per validation round, $\lambda_0=0$ \\
+Champion selection & feasibility first & then composite validation score \\
+Curriculum & MaxMC, 360 levels & 5 families $\times$ 6 intensity bands $\times$ 3 mutation bands $\times$ pulse $\times$ flash \\
+Shield probes / perturbation & 2 / $\sigma=0.08$ & certified PanicGuard tuning \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{Network and evaluation}} \\
+Actor & 12--64--64 MLP & Beta heads for $\tau$ and $d$, categorical head for $f$ (Sentinel's architecture) \\
+Seeds & 42--51 & paired with Sentinel's released checkpoints \\
+Validation battery & benign, mild, strong, chaos & ICMP never seen before testing \\
+Protocol B / A & 20 / 5 episodes & 100 windows each \\
+Protocol C (red team) & CEM, 48 $\times$ 8 & 4 episodes of 60 windows per candidate; worst scenario re-scored on 20 fresh episodes of 100 \\
+\bottomrule
+\end{tabular}}
+\end{table}

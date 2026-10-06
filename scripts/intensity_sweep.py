@@ -20,7 +20,7 @@ from nscsd.policy import DefenderNet, load_sentinel_defender  # noqa: E402
 from nscsd.rollout import run_open_loop, summarize  # noqa: E402
 
 torch.set_num_threads(1)
-SM = "/home/user/alialfatemi/sentinel-ddos/outputs/run_20260523_200520_paper/models"
+from nscsd.paths import SENTINEL_MODELS as SM  # noqa: E402
 GRID = np.round(np.r_[np.arange(0.1, 0.85, 0.1), np.arange(0.86, 1.001, 0.02)], 2)
 EPS = 20
 

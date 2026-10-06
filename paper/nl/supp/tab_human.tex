@@ -1,0 +1,26 @@
+\begin{table}[!htbp]
+\centering
+\caption{Simulated Operator Applying Sentinel's ICMP Constants (Ten Seeds, 20 Episodes)}
+\label{tab:s-human}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llccccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{ICMP} & \multicolumn{2}{c}{ICMP-chaos} & \multicolumn{2}{c}{Strong} & \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+Defender & Operator (accuracy) & Severe & Composite & Severe & Composite & Severe & Composite & Switches \\
+\midrule
+Sentinel & none & 6.9 & -0.480 & 28.2 & -0.332 & 159.6 & -0.753 & 0.0 \\
+Sentinel & ICMP playbook, 0.7 & 1.7 & -0.481 & 28.2 & -0.334 & 161.8 & -0.756 & 4.2 \\
+Sentinel & ICMP playbook, 0.9 & 0.7 & -0.481 & 28.2 & -0.334 & 160.6 & -0.754 & 2.2 \\
+Sentinel & ICMP playbook, 1.0 & 0.3 & -0.482 & 28.1 & -0.334 & 159.6 & -0.753 & 1.0 \\
+\midrule
+IMBANG & none & 17.9 & -0.463 & 21.1 & -0.286 & 37.9 & -0.586 & 0.0 \\
+IMBANG & ICMP playbook, 0.7 & 4.2 & -0.476 & 22.4 & -0.298 & 47.0 & -0.599 & 4.2 \\
+IMBANG & ICMP playbook, 0.9 & 2.1 & -0.480 & 22.0 & -0.298 & 41.2 & -0.591 & 2.2 \\
+IMBANG & ICMP playbook, 1.0 & 0.5 & -0.481 & 21.9 & -0.298 & 37.9 & -0.586 & 1.0 \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Every ten windows a simulated operator recognises the active family with the stated accuracy and, after three windows, applies protocol filtering with drop 0.5 and threshold 0.5 during ICMP floods. This study draws its own traffic, so its no-operator rows differ slightly from Table~\ref{tab:s-b1}. Severe per 500 windows; switches: playbook changes per ICMP episode.}
+\end{table}

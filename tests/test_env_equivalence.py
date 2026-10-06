@@ -11,9 +11,9 @@ import numpy as np
 import pytest
 
 from nscsd import env as E
+from nscsd.paths import SENTINEL_REPO as REPO
 from nscsd.shield import repair
 
-REPO = os.environ.get("SENTINEL_REPO", "/home/user/alialfatemi/sentinel-ddos")
 pytestmark = pytest.mark.skipif(not os.path.isdir(REPO), reason="Sentinel reference repo not available")
 
 

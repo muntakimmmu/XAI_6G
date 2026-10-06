@@ -1,0 +1,25 @@
+\begin{table}[!htbp]
+\centering
+\caption{Constraint-Cancellation Probe on the 80 Trained Checkpoints of Fig.~2 of the Letter}
+\label{tab:s-mech}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Strong flood} & \multicolumn{3}{c}{Polymorphic flood} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Method & Span rate & Drop spread & Severe rate & Span rate & Drop spread & Severe rate \\
+\midrule
+Sentinel & $1.00\pm0.00$ & 0.215 & $0.45\pm0.05$ & $0.92\pm0.03$ & 0.216 & $0.10\pm0.01$ \\
+PPO + shield & $1.00\pm0.00$ & 0.222 & $0.37\pm0.04$ & $0.87\pm0.04$ & 0.221 & $0.08\pm0.01$ \\
+Plain GRPO & $0.47\pm0.21$ & 0.048 & $0.76\pm0.08$ & $0.62\pm0.14$ & 0.048 & $0.24\pm0.05$ \\
+GRPO, no budget & $0.62\pm0.20$ & 0.079 & $0.63\pm0.11$ & $0.62\pm0.15$ & 0.077 & $0.18\pm0.04$ \\
+GRPO + budget & $0.93\pm0.05$ & 0.161 & $0.35\pm0.11$ & $0.67\pm0.13$ & 0.160 & $0.08\pm0.03$ \\
+C-GRPO & $0.78\pm0.09$ & 0.130 & $0.26\pm0.11$ & $0.49\pm0.11$ & 0.131 & $0.06\pm0.03$ \\
+\textbf{IMBANG} & $0.89\pm0.04$ & 0.183 & $0.19\pm0.03$ & $0.60\pm0.08$ & 0.185 & $0.05\pm0.01$ \\
+IMBANG + C-GRPO norm. & $0.85\pm0.05$ & 0.185 & $0.17\pm0.03$ & $0.57\pm0.03$ & 0.188 & $0.04\pm0.01$ \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize From overload states reached after 20 deterministic windows, 64 contexts are forked into $G=8$ stochastic members sharing traffic and rolled out for $H=8$ windows. Span rate: share of groups whose members differ in outage count. Drop spread: within-group standard deviation of the sampled drop probability. Severe rate: share of member-windows in severe outage.}
+\end{table}
