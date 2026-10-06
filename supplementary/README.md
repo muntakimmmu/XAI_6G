@@ -1,7 +1,7 @@
 # IMBANG: supplementary material
 
 Supplementary material for the letter *IMBANG: Balancing DDoS Mitigation and Service Outages with
-Safety-Spanning Group-Relative Policy Optimisation* (M. Rahaman, A. Mahmud, A. Chehri, B. Raahemi),
+Safety-Spanning Group-Relative Policy Optimisation* (M. Rahaman, A. Mahmud, A. Chehri),
 submitted to IEEE Networking Letters.
 
 IMBANG stands for **I**nterpretable, **M**onotone-safe, **B**udgeted, **A**dversary-free,

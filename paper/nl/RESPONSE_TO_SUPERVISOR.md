@@ -22,7 +22,7 @@ Revised version: `paper/nl/imbang_letter.pdf` (four pages, abstract 96 words).
 | 15 | Sec. VII Conclusion | "REDUCE TO HALF" | Conclusion cut from nine lines to four. |
 
 Also carried over from the reviewed copy: the author list and affiliations
-(M. Rahaman, A. Mahmud, A. Chehri, B. Raahemi).
+(M. Rahaman, A. Mahmud, A. Chehri).
 
 Checks on the revised PDF:
 - 4 pages; all columns end at the bottom margin.
